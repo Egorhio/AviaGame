@@ -1,0 +1,15 @@
+# Игнорирую папку сборки и папку сборки с отслеживанием покрытия
+cmake-build-debug/
+cmake-build-debug-coverage
+html
+latex
+#Catch2
+LICENSE
+
+# все другие временные и сгенерированные файлы (опционально)
+*.o
+*.exe
+*.out
+*.user
+*.idea/
+*.png
