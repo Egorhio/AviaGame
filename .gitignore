@@ -4,7 +4,7 @@ cmake-build-debug-coverage
 html
 latex
 #Catch2
-LICENSE
+temporary
 
 # все другие временные и сгенерированные файлы (опционально)
 *.o
