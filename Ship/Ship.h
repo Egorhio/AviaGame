@@ -21,7 +21,7 @@ namespace acg {
 
     public:
         Ship(const std::string& name, double cost);
-        //Ship() = default;
+        Ship() = default;
         ~Ship() override = default;
 
         // **Методы для любого судна**

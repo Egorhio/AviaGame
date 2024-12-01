@@ -3,7 +3,7 @@ project(3)
 
 set(CMAKE_CXX_STANDARD 23)
 
-include_directories(Armament Aircraft Mission Ship Table)
+include_directories(Armament Aircraft Mission Ship Table-template)
 
 add_executable(3
         Armament/Armament.cpp
@@ -14,8 +14,8 @@ add_executable(3
         Ship/Ship.h
         Mission/Mission.cpp
         Mission/Mission.h
-        Table/Table.cpp
-        Table/Table.h
+        Table-template/Table.inl
+        Table-template/Table.h
         Global.cpp
         Global.h
         Ship/Ship-Interface.h
@@ -27,4 +27,6 @@ add_executable(3
         Ship/Aircraft/AircraftCarrier.h
         Ship/Aircraft/AircraftCarrier-Interface.h
         Ship/Cruiser/Cruiser-Interface.h
-        main.cpp)
+        main.cpp
+        Table-template/Table.inl
+        Table-template/Table.inl)
