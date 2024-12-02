@@ -7,7 +7,7 @@
 
 namespace acg {
 
-    class AircraftCarrier : public Ship, public IAircraft {
+    class AircraftCarrier : public Ship, public IAircraftCarrier {
     private:
         ship::airvector aircrafts;             // Вектор самолетов
         int max_aircraft_capacity;       // Максимальное количество самолётов

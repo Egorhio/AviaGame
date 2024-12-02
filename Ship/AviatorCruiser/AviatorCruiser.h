@@ -8,7 +8,7 @@
 
 namespace acg {
 
-    class AviatorCruiser : public IAircraft, public ICruiser, public Ship {
+    class AviatorCruiser : public IAircraftCarrier, public ICruiser, public Ship {
     private:
         ship::armvector armament;       // Вооружение корабля
         int max_armament_capacity;      // Максимальное количество вооружения

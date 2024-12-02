@@ -5,8 +5,10 @@
 
 namespace acg {
 
-    class IAircraft {
+    class IAircraftCarrier {
     public:
+        virtual ~IAircraftCarrier() = default;
+
         // **Методы для авианосца**
         [[nodiscard]] virtual int getMaxAircraftCapacity() const = 0; // Получить максимальное количество самолетов на борту
         virtual void setMaxAircraftCapacity(int max_cap) = 0; // Установить максимальное количество самолетов на борту
