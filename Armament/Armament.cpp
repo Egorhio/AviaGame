@@ -98,16 +98,17 @@ namespace acg {
         // Проверка времени между выстрелами
         static auto last_shot_time = std::chrono::steady_clock::now();
         auto current_time = std::chrono::steady_clock::now();
-        auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>
-                                 (current_time - last_shot_time).count() / 1000.0;
+        auto time_diff = std::chrono::duration<double>
+                (current_time - last_shot_time).count();
 
-        if (time_diff < (1.0 / rate_of_fire)) {
+        if (time_diff < (1.0 / static_cast<double>(rate_of_fire))) {
             return; // Слишком рано для следующего выстрела
         }
 
         current_ammo--;
         last_shot_time = current_time;
     }
+
 
     void Armament::reload() {
         if (!active || current_ammo == max_ammo_capacity) {
@@ -127,11 +128,10 @@ namespace acg {
         auto reload_time = std::chrono::duration_cast<std::chrono::seconds>
                 (current_time - reload_start_time).count();
 
-        if (reload_time >= reload_speed) {
+        if (reload_time >= static_cast<int64_t>(reload_speed)) { // Приведение к конкретному типу
             current_ammo = max_ammo_capacity;
             is_reloading = false;
         }
     }
-
 
 } // namespace acg
