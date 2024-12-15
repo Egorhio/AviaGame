@@ -2,7 +2,6 @@
 #define SHIP_TABLE_H
 
 #include <stdexcept>
-#include <cassert> // TODO Потом убрать
 
 namespace acg {
 

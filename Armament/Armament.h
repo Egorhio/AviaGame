@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 #ifndef ARMAMENT_H
 #define ARMAMENT_H
 
@@ -60,6 +58,3 @@ namespace acg {
 } // namespace acg
 
 #endif //ARMAMENT_H
-
-
-#pragma clang diagnostic pop

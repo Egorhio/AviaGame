@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 #ifndef AIRCRAFT_H
 #define AIRCRAFT_H
 
@@ -56,6 +54,3 @@ namespace acg {
 } //namespace acg
 
 #endif // AIRCRAFT_H
-
-
-#pragma clang diagnostic pop
