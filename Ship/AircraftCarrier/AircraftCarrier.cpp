@@ -17,10 +17,6 @@ namespace acg {
         return aircrafts;
     }
 
-    void AircraftCarrier::setMaxAircrafts(const ship::airvector& new_aircrafts) {
-        aircrafts = new_aircrafts;
-    }
-
     void AircraftCarrier::modifyAircrafts(const ship::airvector& updated_aircrafts) {
         if (updated_aircrafts.size() <= max_aircraft_capacity) {
             aircrafts = updated_aircrafts;
@@ -30,12 +26,20 @@ namespace acg {
     }
 
     void AircraftCarrier::bomberAttack(const ship::coordinate& target_coordinates) {
-        if (aircrafts.empty()) return;
+        static auto last_attack_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
 
+        // Минимальный интервал между атаками (5 секунд)
+        const auto min_attack_interval = std::chrono::seconds(5);
+        if (current_time - last_attack_time < min_attack_interval) {
+            return;
+        }
+
+        // Существующая логика...
+        if (aircrafts.empty()) return;
         auto current_pos = getCurrentCoordinates();
         airothervector available_bombers;
-
-        for (auto& [aircraft, aircraft_pos] : aircrafts) {
+        for (auto &[aircraft, aircraft_pos]: aircrafts) {
             if (aircraft.getType() == Aircraft::AircraftType::ATTACK &&
                 aircraft.getActive() &&
                 aircraft.getDurability() > 20) {
@@ -47,13 +51,8 @@ namespace acg {
 
         double distance = calculateDistance(target_coordinates, current_pos);
         executeAttackWaves(available_bombers, distance);
-    }
 
-    double AircraftCarrier::calculateDistance(const ship::coordinate& target_coordinates, const ship::coordinate& current_pos) {
-        return std::sqrt(
-                std::pow(target_coordinates.first - current_pos.first, 2) +
-                std::pow(target_coordinates.second - current_pos.second, 2)
-        );
+        last_attack_time = current_time;
     }
 
     void AircraftCarrier::executeAttackWaves(airothervector& available_bombers, double distance) {
@@ -84,11 +83,25 @@ namespace acg {
     }
 
 
+
+
     void AircraftCarrier::interceptorAttack(const ship::airvector& enemy_aircraft) {
+        static auto last_intercept_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+
+        // Минимальный интервал между перехватами (3 секунды)
+        const auto min_intercept_interval = std::chrono::seconds(3);
+        if (current_time - last_intercept_time < min_intercept_interval) {
+            return;
+        }
+
+        // Существующая логика...
         if (aircrafts.empty()) return;
-        auto ready_fighters = getReadyFighters(); // Получаем готовых истребителей
+        auto ready_fighters = getReadyFighters();
         if (ready_fighters.empty()) return;
-        assignTargetsToFighters(enemy_aircraft, ready_fighters); // Распределяем цели
+        assignTargetsToFighters(enemy_aircraft, ready_fighters);
+
+        last_intercept_time = current_time;
     }
 
 // ▎Функция 1: Получение списка готовых истребителей
@@ -151,5 +164,77 @@ namespace acg {
         return best_fighter;
     }
 
+    [[nodiscard]] double AircraftCarrier::calculateTotalCost() const {
+        double total_cost = getCost(); // Базовая стоимость корабля
+
+        for (const auto& [aircraft, _] : aircrafts) {
+            total_cost += aircraft.getCost();
+        }
+
+        // Учитываем состояние корабля
+        double durability_factor = static_cast<double>(getDurability()) / 100.0;
+        total_cost *= durability_factor;
+
+        return total_cost;
+    }
+
+    void AircraftCarrier::setDestination(const ship::coordinate& new_destination) {
+        static auto last_destination_change = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+
+        // Минимальный интервал между сменой курса (7 секунд для авианосца)
+        const auto min_course_change_interval = std::chrono::seconds(7);
+
+        if (current_time - last_destination_change < min_course_change_interval) {
+            return;
+        }
+
+        double distance = calculateDistance(new_destination, getCurrentCoordinates());
+        if (distance > getSpeed() * 8) {
+            double ratio = (getSpeed() * 8) / distance;
+            ship::coordinate adjusted_destination = {
+                    getCurrentCoordinates().first +
+                    (new_destination.first - getCurrentCoordinates().first) * ratio,
+                    getCurrentCoordinates().second +
+                    (new_destination.second - getCurrentCoordinates().second) * ratio
+            };
+            setDestinationCoordinates(adjusted_destination);
+        } else {
+            setDestinationCoordinates(new_destination);
+        }
+
+        last_destination_change = current_time;
+    }
+
+    void AircraftCarrier::move() {
+        static auto last_move_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+
+        // Интервал обновления движения (2 секунды для авианосца)
+        const auto move_interval = std::chrono::seconds(2);
+
+        if (current_time - last_move_time < move_interval) {
+            return;
+        }
+
+        auto destination = getDestinationCoordinates();
+        if (!destination.has_value()) return;
+
+        double distance = calculateDistance(destination.value(), getCurrentCoordinates());
+        if (distance > getSpeed()) {
+            double ratio = getSpeed() / distance;
+            ship::coordinate new_pos = {
+                    getCurrentCoordinates().first +
+                    (destination.value().first - getCurrentCoordinates().first) * ratio,
+                    getCurrentCoordinates().second +
+                    (destination.value().second - getCurrentCoordinates().second) * ratio
+            };
+            setCurrentCoordinates(new_pos);
+        } else {
+            setCurrentCoordinates(destination.value());
+        }
+
+        last_move_time = current_time;
+    }
 
 } //namespace acg

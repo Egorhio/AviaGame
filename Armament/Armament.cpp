@@ -10,7 +10,7 @@ namespace acg {
         name = name_;
     }
 
-    Armament::ArmamentType Armament::getType() {
+    Armament::ArmamentType Armament::getType() const {
         return type;
     }
 

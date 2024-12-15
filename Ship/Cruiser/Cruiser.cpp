@@ -50,8 +50,8 @@ namespace acg {
         return storage_capacity;
     }
 
-    void Cruiser::setStorageCapacity(int st_c)
-    {if (st_c < 0) {
+    void Cruiser::setStorageCapacity(int st_c) {
+        if (st_c < 0) {
             throw std::invalid_argument("Storage capacity cannot be negative");
         }
         storage_capacity = st_c;
@@ -66,50 +66,74 @@ namespace acg {
     }
 
     void Cruiser::fireAtShip(const ship::coordinate &target_coordinates) {
+        static auto last_fire_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+
+        // Минимальный интервал между залпами (например, 2 секунды)
+        const auto min_fire_interval = std::chrono::seconds(2);
+
+        if (current_time - last_fire_time < min_fire_interval) {
+            return; // Слишком рано для следующего залпа
+        }
+
         for (auto& weapon : armament) {
             if (weapon.getActive()) {
-                // Проверяем дистанцию до цели
                 auto current_pos = getCurrentCoordinates();
-                double distance = std::sqrt(
-                        std::pow(target_coordinates.first - current_pos.first, 2) +
-                        std::pow(target_coordinates.second - current_pos.second, 2)
-                );
-
+                double distance = calculateDistance(target_coordinates, current_pos);
                 if (distance <= weapon.getRangeOfFire()) {
                     weapon.shoot();
                 }
             }
         }
+        last_fire_time = current_time;
     }
 
     void Cruiser::reloadWeapon(const Armament &weapon) {
+        static auto reload_start_time = std::chrono::steady_clock::now();
+        static bool is_reloading = false;
+
+        auto current_time = std::chrono::steady_clock::now();
+        auto reload_duration = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>
+                (current_time - reload_start_time).count());
+
+        if (!is_reloading) {
+            reload_start_time = current_time;
+            is_reloading = true;
+        }
+
         auto ammo_info = getAmmoInfo(weapon.getAmmoName());
         if (!ammo_info) return;
 
-        int needed_ammo = weapon.getMaxAmmoCapacity() - weapon.getCurrentAmmo();
-        if (needed_ammo <= 0) return;
+        // Если прошло достаточно времени для перезарядки
+        if (reload_duration >= weapon.getReloadSpeed()) {
+            int needed_ammo = weapon.getMaxAmmoCapacity() - weapon.getCurrentAmmo();
+            if (needed_ammo <= 0) return;
 
-        int available_ammo = std::min(needed_ammo, ammo_info->quantity);
-        if (available_ammo > 0) {
-            // Обновляем количество боеприпасов в оружии и на складе
-            const_cast<Armament&>(weapon).setCurrentAmmo(
-                    weapon.getCurrentAmmo() + available_ammo
-            );
-            ammo_storage[weapon.getAmmoName()].quantity -= available_ammo;
+            int available_ammo = std::min(needed_ammo, ammo_info->quantity);
+            if (available_ammo > 0) {
+                const_cast<Armament&>(weapon).setCurrentAmmo(
+                        weapon.getCurrentAmmo() + available_ammo
+                );
+                ammo_storage[weapon.getAmmoName()].quantity -= available_ammo;
+            }
+            is_reloading = false;
         }
     }
 
     void Cruiser::fireAtAircraft(const ship::airvector &enemy_aircraft) {
+        static auto last_aa_fire_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+        // Минимальный интервал между залпами ПВО (например, 1 секунда)
+        const auto min_aa_fire_interval = std::chrono::seconds(1);
+        if (current_time - last_aa_fire_time < min_aa_fire_interval) {
+            return;
+        }
+
         for (auto &weapon: armament) {
-            if (weapon.getActive() && weapon.getType() != Armament::ArmamentType::LIGHT) {
+            if (weapon.getActive()) {
                 for (const auto &aircraft: enemy_aircraft) {
                     auto current_pos = getCurrentCoordinates();
-                    // Проверяем находится ли самолет в зоне поражения
-                    double distance = std::sqrt(
-                            std::pow(aircraft.second.first - current_pos.first, 2) +
-                            std::pow(aircraft.second.second - current_pos.second, 2)
-                    );
-
+                    double distance = calculateDistance(aircraft.second, current_pos);
                     if (distance <= weapon.getRangeOfFire()) {
                         weapon.shoot();
                         break;
@@ -117,6 +141,76 @@ namespace acg {
                 }
             }
         }
+        last_aa_fire_time = current_time;
+    }
+
+
+
+    // Рассчитать суммарную стоимость корабля, учитывая стоимость вооружения и боеприпасов
+    double Cruiser::calculateTotalCost() const {
+        double total_cost = getCost(); // Базовая стоимость корабля
+        // Добавляем стоимость вооружения
+        for (const auto& weapon : armament) {
+            total_cost += weapon.getCost();
+        }
+        // Добавляем стоимость боеприпасов
+        for (const auto& [ammo_name, ammo_info] : ammo_storage) {
+            total_cost += ammo_info.quantity * ammo_info.cost;
+        }
+        // Учитываем состояние корабля
+        double durability_factor = static_cast<double>(getDurability()) / 100.0;
+        total_cost *= durability_factor;
+
+        return total_cost;
+    }
+
+// Установить новую точку назначения для крейсера
+    void Cruiser::setDestination(const ship::coordinate &new_destination) {
+        static auto last_destination_change = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+
+        // Минимальный интервал между сменой курса (например, 5 секунд)
+        const auto min_course_change_interval = std::chrono::seconds(5);
+
+        if (current_time - last_destination_change < min_course_change_interval) {
+            return; // Слишком рано для смены курса
+        }
+
+        double distance = calculateDistance(new_destination, current_coordinates);
+        if (distance > speed * 10) {
+            double ratio = (speed * 10) / distance;
+            destination_coordinates.first = current_coordinates.first +
+                                            (new_destination.first - current_coordinates.first) * ratio;
+            destination_coordinates.second = current_coordinates.second +
+                                             (new_destination.second - current_coordinates.second) * ratio;
+        } else {
+            destination_coordinates = new_destination;
+        }
+
+        last_destination_change = current_time;
+    }
+
+    void Cruiser::move() {
+        static auto last_move_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+
+        // Интервал обновления движения (например, 1 секунда)
+        const auto move_interval = std::chrono::seconds(4);
+
+        if (current_time - last_move_time < move_interval) {
+            return; // Слишком рано для следующего перемещения
+        }
+
+        double distance = calculateDistance(destination_coordinates, current_coordinates);
+        if (distance > speed) {
+            double ratio = speed / distance;
+            current_coordinates.first += (destination_coordinates.first - current_coordinates.first) * ratio;
+            current_coordinates.second += (destination_coordinates.second - current_coordinates.second) * ratio;
+        } else {
+            current_coordinates = destination_coordinates;
+        }
+
+        last_move_time = current_time;
     }
 
 } // namespace acg

@@ -152,54 +152,52 @@ namespace acg {
         return total_cost;
     }
 
-
     void Ship::move() {
         static auto last_move_time = std::chrono::steady_clock::now();
         auto current_time = std::chrono::steady_clock::now();
 
-        // Используем более безопасный способ получения продолжительности
-        auto elapsed = static_cast<double>
-                (std::chrono::duration_cast<std::chrono::milliseconds>
-                        (current_time - last_move_time).count()) / 1000.0;
+        // Интервал обновления движения
+        const auto move_interval = std::chrono::seconds(3);
 
-        double distance = speed * elapsed;
+        if (current_time - last_move_time < move_interval) {
+            return;
+        }
 
-        // Убедимся, что используем double для вычислений
-        double total_distance = std::sqrt(
-                std::pow(destination_coordinates.first - current_coordinates.first, 2.0) +
-                std::pow(destination_coordinates.second - current_coordinates.second, 2.0)
-        );
+        auto destination = getDestinationCoordinates();
+        if (!destination.has_value()) return;
 
-        if (distance >= total_distance) {
-            current_coordinates = destination_coordinates;
+        double distance = calculateDistance(destination.value(), getCurrentCoordinates());
+        if (distance > getSpeed()) {
+            double ratio = getSpeed() / distance;
+            ship::coordinate new_pos = {
+                    getCurrentCoordinates().first +
+                    (destination.value().first - getCurrentCoordinates().first) * ratio,
+                    getCurrentCoordinates().second +
+                    (destination.value().second - getCurrentCoordinates().second) * ratio
+            };
+            setCurrentCoordinates(new_pos);
         } else {
-            double ratio = distance / total_distance;
-            current_coordinates.first +=
-                    static_cast<double>(destination_coordinates.first - current_coordinates.first) * ratio;
-            current_coordinates.second +=
-                    static_cast<double>(destination_coordinates.second - current_coordinates.second) * ratio;
+            setCurrentCoordinates(destination.value());
         }
 
         last_move_time = current_time;
     }
 
     void Ship::setDestination(const ship::coordinate &new_destination) {
-        using namespace std::chrono_literals;
-        auto max_time = 24h;
-        double max_distance = speed * static_cast<double>(
-                std::chrono::duration_cast<std::chrono::hours>(max_time).count()
-        );
-
-        double required_distance = std::sqrt(
-                std::pow(new_destination.first - current_coordinates.first, 2.0) +
-                std::pow(new_destination.second - current_coordinates.second, 2.0)
-        );
-
+        double max_distance = speed * 8;
+        double required_distance = calculateDistance(new_destination, current_coordinates);
         if (required_distance > max_distance) {
             throw std::invalid_argument("Destination is too far");
         }
 
         destination_coordinates = new_destination;
+    }
+
+    double calculateDistance(const ship::coordinate& target_coordinates, const ship::coordinate& current_pos) {
+        return std::sqrt(
+                std::pow(target_coordinates.first - current_pos.first, 2) +
+                std::pow(target_coordinates.second - current_pos.second, 2)
+        );
     }
 
 

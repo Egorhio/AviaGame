@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 #ifndef CRUISER_H
 #define CRUISER_H
 
@@ -9,9 +7,9 @@ namespace acg {
 
     class Cruiser : public Ship, public ICruiser {
     private:
-        ship::armvector armament;             // Вооружение корабля
-        int max_armament_capacity;      // Максимальное количество вооружения
-        int storage_capacity;           // Вместимость склада
+        ship::armvector armament {0};             // Вооружение корабля
+        int max_armament_capacity = 0;      // Максимальное количество вооружения
+        int storage_capacity = 0;           // Вместимость склада
         ship::ammomap ammo_storage;           // Список боеприпасов на складе (по названию)
 
     public:
@@ -35,11 +33,12 @@ namespace acg {
         void fireAtShip(const ship::coordinate& target_coordinates) override; // Произвести выстрел по кораблю
         void reloadWeapon(const Armament& weapon) override; // Перезарядить оружие снарядами со склада
         void fireAtAircraft(const ship::airvector& enemy_aircraft) override; // Выстрел по самолётам противникака
+
+        [[nodiscard]] double calculateTotalCost() const override;
+        void setDestination(const ship::coordinate &new_destination) override;
+        void move() override;
     };
 
 } // namespace acg
 
 #endif //CRUISER_H
-
-
-#pragma clang diagnostic pop

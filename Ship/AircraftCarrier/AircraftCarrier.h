@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 #ifndef AIRCRAFTCARRIER_H
 #define AIRCRAFTCARRIER_H
 
@@ -11,8 +9,8 @@ namespace acg {
 
     class AircraftCarrier : public Ship, public IAircraftCarrier {
     private:
-        ship::airvector aircrafts;             // Вектор самолетов
-        int max_aircraft_capacity;       // Максимальное количество самолётов
+        ship::airvector aircrafts{0};             // Вектор самолетов
+        int max_aircraft_capacity = 0;       // Максимальное количество самолётов
 
     public:
         AircraftCarrier(const AircraftCarrier&) = delete;
@@ -28,23 +26,23 @@ namespace acg {
         void modifyAircrafts(const ship::airvector& updated_aircrafts); // Модифицировать информацию о самолётах
         void bomberAttack(const ship::coordinate& target_coordinates) override; // Вычислить урон от бомбардировщиков и сделать вылет
         void interceptorAttack(const ship::airvector& enemy_aircraft) override; // Урон противнику от истребителей и вылет
-        void setMaxAircrafts(const ship::airvector &new_aircrafts);
 
-        // ** Дополнительные методы для дополнения логики работы bomberAttack() и interceptorAttack()
+        // ** Дополнительные методы для дополнения логики работы bomberAttack()
 
-        static double calculateDistance(const ship::coordinate &target_coordinates, const ship::coordinate &current_pos);
         static void executeAttackWaves(airothervector &available_bombers, double distance);
 
         // ** Дополнительные методы для дополнения логики работы interceptorAttack()
 
-        std::vector<Aircraft *> getReadyFighters();
+        airothervector getReadyFighters();
         void assignTargetsToFighters(const ship::airvector &enemy_aircraft, airothervector &ready_fighters);
-        static Aircraft *findBestFighter(airothervector &ready_fighters, double distance);
+        static Aircraft* findBestFighter(airothervector &ready_fighters, double distance);
+
+
+        [[nodiscard]] double calculateTotalCost() const override;
+        void setDestination(const ship::coordinate &new_destination) override;
+        void move() override;
     };
 
 } // namespace acg
 
 #endif //AIRCRAFTCARRIER_H
-
-
-#pragma clang diagnostic pop

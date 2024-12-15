@@ -32,7 +32,7 @@ namespace acg {
         // **Геттеры и сеттеры для полей**
         [[nodiscard]] std::string getName() const; // Получить название
         void setName(const std::string& name_);        // Установить название
-        [[nodiscard]] ArmamentType getType() ;              // Получить тип оружия
+        [[nodiscard]] ArmamentType getType() const;              // Получить тип оружия
         void setType(ArmamentType type_);              // Установить тип оружия
         [[nodiscard]] std::string getAmmoName() const;           // Получить название боеприпаса
         void setAmmoName(const std::string& n);    // Установить название боеприпаса

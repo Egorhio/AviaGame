@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 #ifndef SHIP_H
 #define SHIP_H
 
@@ -25,6 +23,7 @@ namespace acg {
 
         Ship(const Ship&) = delete;
         Ship& operator=(const Ship&) = delete; // TODO нужна ли защита от копирования?
+
         Ship(shiptype type, const std::string& name, const std::string& captain_rank,
              const std::string& captain_name, double speed, int durability, double cost);
 
@@ -52,14 +51,15 @@ namespace acg {
 
         // *Дополнительные базовые методы*
         void move() override; // Переместить корабль в точку назначения
-        void receiveDamage(int damage) override; // Получить урон
+        void receiveDamage(int damage); // Получить урон
         [[nodiscard]] double calculateTotalCost() const override;
         void setDestination(const ship::coordinate &new_destination) override;
+
     };
+
+    //** доп метод
+    double calculateDistance(const ship::coordinate &target_coordinates, const ship::coordinate &current_pos);
 
 } // namespace acg
 
 #endif // SHIP_H
-
-
-#pragma clang diagnostic pop

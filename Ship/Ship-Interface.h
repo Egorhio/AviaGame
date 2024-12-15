@@ -36,7 +36,6 @@ namespace acg {
         [[nodiscard]] virtual double calculateTotalCost() const = 0;
         virtual void setDestination(const ship::coordinate &new_destination) = 0;
         virtual void move() = 0; // Переместить корабль в точку назначения
-        virtual void receiveDamage(int damage) = 0; // Получить урон
 
     };
 } // namespace acg
