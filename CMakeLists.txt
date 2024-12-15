@@ -23,9 +23,9 @@ add_executable(3
         Ship/Cruiser/Cruiser.h
         Ship/AviatorCruiser/AviatorCruiser.cpp
         Ship/AviatorCruiser/AviatorCruiser.h
-        Ship/Aircraft/AircraftCarrier.cpp
-        Ship/Aircraft/AircraftCarrier.h
-        Ship/Aircraft/AircraftCarrier-Interface.h
+        Ship/AircraftCarrier/AircraftCarrier.cpp
+        Ship/AircraftCarrier/AircraftCarrier.h
+        Ship/AircraftCarrier/AircraftCarrier-Interface.h
         Ship/Cruiser/Cruiser-Interface.h
         main.cpp
         Table-template/Table.inl

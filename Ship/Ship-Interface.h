@@ -5,7 +5,7 @@
 #include "Aircraft.h"
 #include <vector>
 #include <map>
-#include <optional> //TODO Optional for more functions
+#include <valarray>
 
 namespace acg {
 
@@ -25,7 +25,7 @@ namespace acg {
     class IShip {
     public:
         virtual ~IShip() = default;
-        enum shiptype { CRUISER, AIRCRAFTCARRIER, AVIATORCRUISER };
+        enum class shiptype { CRUISER, AIRCRAFTCARRIER, AVIATORCRUISER };
 
         // **Методы для любого судна**
         [[nodiscard]] virtual shiptype getShipType() const = 0; // Получить тип корабля
@@ -50,6 +50,8 @@ namespace acg {
         // *Дополнительные базовые методы*
         [[nodiscard]] virtual double getCost() const = 0; // Вернуть стоимость корабля (суммарную)
         virtual void setCost(double cost) = 0; // Установить стоимость для корабля
+        [[nodiscard]] virtual double calculateTotalCost() const = 0;
+        virtual void setDestination(const ship::coordinate &new_destination) = 0;
         virtual void move() = 0; // Переместить корабль в точку назначения
         virtual void receiveDamage(int damage) = 0; // Получить урон
 

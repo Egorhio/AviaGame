@@ -9,20 +9,24 @@ namespace acg {
 
     class Ship : public IShip {
     protected:
-        shiptype ship_type;                       // Тип корабля
-        std::string name;                            // Название судна
-        std::string captain_rank;                    // Звание капитана
-        std::string captain_name;                    // Имя капитана
-        double speed;                                // Скорость корабля
-        int durability;                              // Живучесть судна
-        ship::coordinate current_coordinates; // Текущие координаты корабля
-        ship::coordinate destination_coordinates; // Координаты места следования
-        double cost;                                 // Стоимость корабля
+        shiptype ship_type = shiptype::CRUISER;
+        std::string name = "Unnamed";
+        std::string captain_rank = "None";
+        std::string captain_name = "None";
+        double speed = 0.0;
+        int durability = 100;
+        ship::coordinate current_coordinates = {0.0, 0.0};
+        ship::coordinate destination_coordinates = {0.0, 0.0};
+        double cost = 0.0;
 
     public:
-        Ship(const std::string& name, double cost);
         Ship() = default;
         ~Ship() override = default;
+
+        Ship(const Ship&) = delete;
+        Ship& operator=(const Ship&) = delete; // TODO нужна ли защита от копирования?
+        Ship(shiptype type, const std::string& name, const std::string& captain_rank,
+             const std::string& captain_name, double speed, int durability, double cost);
 
         // **Методы для любого судна**
         [[nodiscard]] shiptype getShipType() const override; // Получить тип корабля
@@ -30,6 +34,8 @@ namespace acg {
         [[nodiscard]] std::string getName() const override; // Получить название судна
         void setName(const std::string &name) override; // Установить название судна
         [[nodiscard]] std::string getCaptainRank() const override; // Получить звание капитана
+        [[nodiscard]] double getCost() const override;
+        void setCost(double cost) override; // Установить стоимость для корабля
         void setCaptainRank(const std::string &rank) override; // Установить звание капитана
         [[nodiscard]] std::string getCaptainName() const override; // Получить имя капитана
         void setCaptainName(const std::string &name) override; // Установить имя капитана
@@ -45,10 +51,10 @@ namespace acg {
         void setDestinationCoordinates(const ship::coordinate& coordinates) override; // Установить точку назначения
 
         // *Дополнительные базовые методы*
-        [[nodiscard]] double getCost() const override; // Вернуть стоимость корабля (суммарную)
-        void setCost(double cost) override; // Установить стоимость для корабля
         void move() override; // Переместить корабль в точку назначения
         void receiveDamage(int damage) override; // Получить урон
+        [[nodiscard]] double calculateTotalCost() const override;
+        void setDestination(const ship::coordinate &new_destination) override;
     };
 
 } // namespace acg

@@ -1,5 +1,5 @@
-#ifndef AIRCRAFT_INTERFACE_H
-#define AIRCRAFT_INTERFACE_H
+#ifndef AIRCRAFTCARRIER_INTERFACE_H
+#define AIRCRAFTCARRIER_INTERFACE_H
 
 #include "Ship.h"
 
@@ -20,4 +20,4 @@ namespace acg {
 
 } //namespace acg
 
-#endif //AIRCRAFT_INTERFACE_H
+#endif //AIRCRAFTCARRIER_INTERFACE_H
