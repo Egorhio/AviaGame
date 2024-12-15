@@ -116,7 +116,7 @@ namespace acg {
         }
 
         static bool is_reloading = false;
-        static auto reload_start_time = std::chrono::steady_clock::now();
+        static auto reload_start_time = std::chrono::steady_clock::now(); // TODO нужен ли chrono?
 
         if (!is_reloading) {
             reload_start_time = std::chrono::steady_clock::now();

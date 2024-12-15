@@ -29,26 +29,26 @@ namespace acg {
              const std::string& captain_name, double speed, int durability, double cost);
 
         // **Методы для любого судна**
-        [[nodiscard]] shiptype getShipType() const override; // Получить тип корабля
-        void setShipType(shiptype type) override;  // Установить тип корабля
-        [[nodiscard]] std::string getName() const override; // Получить название судна
-        void setName(const std::string &name) override; // Установить название судна
-        [[nodiscard]] std::string getCaptainRank() const override; // Получить звание капитана
-        [[nodiscard]] double getCost() const override;
-        void setCost(double cost) override; // Установить стоимость для корабля
-        void setCaptainRank(const std::string &rank) override; // Установить звание капитана
-        [[nodiscard]] std::string getCaptainName() const override; // Получить имя капитана
-        void setCaptainName(const std::string &name) override; // Установить имя капитана
-        [[nodiscard]] double getSpeed() const override; // Получить текущую скорость
-        void setSpeed(double speed) override; // Установить текущую скорость
-        [[nodiscard]] int getDurability() const override; // Получить живучесть судна
-        void setDurability(int durability) override; // Установить живучесть судна
+        [[nodiscard]] shiptype getShipType() const; // Получить тип корабля
+        void setShipType(shiptype type);  // Установить тип корабля
+        [[nodiscard]] std::string getName() const; // Получить название судна
+        void setName(const std::string &name); // Установить название судна
+        [[nodiscard]] std::string getCaptainRank() const; // Получить звание капитана
+        [[nodiscard]] double getCost() const;
+        void setCost(double cost); // Установить стоимость для корабля
+        void setCaptainRank(const std::string &rank); // Установить звание капитана
+        [[nodiscard]] std::string getCaptainName() const; // Получить имя капитана
+        void setCaptainName(const std::string &name); // Установить имя капитана
+        [[nodiscard]] double getSpeed() const; // Получить текущую скорость
+        void setSpeed(double speed); // Установить текущую скорость
+        [[nodiscard]] int getDurability() const; // Получить живучесть судна
+        void setDurability(int durability); // Установить живучесть судна
 
         // *Методы работы с координатами*
-        [[nodiscard]] ship::coordinate getCurrentCoordinates() const override; // Получить текущую точку
-        void setCurrentCoordinates(const ship::coordinate& coordinates) override; // Установить текущую точку
-        [[nodiscard]] ship::coordinate getDestinationCoordinates() const override; // Получить точку назначения
-        void setDestinationCoordinates(const ship::coordinate& coordinates) override; // Установить точку назначения
+        [[nodiscard]] ship::coordinate getCurrentCoordinates() const; // Получить текущую точку
+        void setCurrentCoordinates(const ship::coordinate& coordinates); // Установить текущую точку
+        [[nodiscard]] std::optional<ship::coordinate> getDestinationCoordinates() const; // Получить точку назначения
+        void setDestinationCoordinates(const ship::coordinate& coordinates); // Установить точку назначения
 
         // *Дополнительные базовые методы*
         void move() override; // Переместить корабль в точку назначения

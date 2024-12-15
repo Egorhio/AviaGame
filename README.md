@@ -112,24 +112,23 @@
 
 
 
-1. Стоит ли переопределять методы: стоимость корабля, передвижение корабля... в классах наследниках?
-2. Что значит суммарная стоимость корабля?
-3. Нужно ли переопределять геттеры и сеттеры?
-4. Нужно ли делать более сложную хеш-функцию?
-5. Перегрузки операторов....
-6. 
 
+chrono
+optional
 
+    double Ship::calculateTotalCost() const {
+        double total_cost = cost; // Базовая стоимость корабля
 
+        // Модификаторы стоимости в зависимости от состояния
+        double durability_factor = static_cast<double>(durability) / 100.0;
+        total_cost *= durability_factor;
 
+//        // Добавляем стоимость вооружения и самолетов (если есть)
+//        if (auto armament = getArmament(); !armament.empty()) {
+//            for (const auto& weapon : armament) {
+//                total_cost += weapon->getCost();
+//            }
+//        }
 
-
-* Умные указатели
-* Преобразование типов
-  * Шаблоны функций
-  * Шаблоны классов
-* STL
-    * Containers
-    * Iterators
-    * Algorithms
-*
+        return total_cost;
+    }
