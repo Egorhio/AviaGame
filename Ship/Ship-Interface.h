@@ -20,7 +20,7 @@ namespace acg {
         using armvector = std::vector<Armament>;
         using ammomap = std::map<std::string, AmmoInfo>;
         using coordinate = std::pair<double, double>;
-        using airvector = std::vector<std::pair<std::string, coordinate>>;
+        using airvector = std::vector<std::pair<Aircraft, coordinate>>;
 
     } // namespace ship
 
