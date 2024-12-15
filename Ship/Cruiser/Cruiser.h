@@ -15,18 +15,21 @@ namespace acg {
         ship::ammomap ammo_storage;           // Список боеприпасов на складе (по названию)
 
     public:
+        Cruiser(const Cruiser&) = delete;
+        Cruiser& operator=(const Cruiser&) = delete;
+
         Cruiser() = default;
         ~Cruiser() override = default;
 
         // **Методы для судна прикрытия (Крейсер)**
-        [[nodiscard]] ship::armvector getArmament() const override; // Получить вооружение
-        void modifyArmament(const ship::armvector& new_armament) override; // Модифицировать вооружение
-        [[nodiscard]] std::optional<ship::AmmoInfo> getAmmoInfo(const std::string &ammo_name) const override; // Получить информацию о боеприпасах
-        void modifyAmmoInfo(const ship::ammomap& ammo_name) override; // Модифицировать боеприпасы
-        [[nodiscard]] int getMaxArmamentCapacity() const override;
-        void setMaxArmamentCapacity(int arm_capacity) override;
-        [[nodiscard]] int getStorageCapacity() const override;
-        void setStorageCapacity(int st_c) override;
+        [[nodiscard]] std::optional<ship::armvector> getArmament() const; // Получить вооружение
+        void modifyArmament(const ship::armvector& new_armament); // Модифицировать вооружение
+        [[nodiscard]] std::optional<ship::AmmoInfo> getAmmoInfo(const std::string &ammo_name) const; // Получить информацию о боеприпасах
+        void modifyAmmoInfo(const ship::ammomap& ammo_name); // Модифицировать боеприпасы
+        [[nodiscard]] int getMaxArmamentCapacity() const;
+        void setMaxArmamentCapacity(int arm_capacity);
+        [[nodiscard]] int getStorageCapacity() const;
+        void setStorageCapacity(int st_c);
 
         [[nodiscard]] int calculateAvailableAmmoStorage() const override; // Рассчитать доступное место для боеприпасов
         void fireAtShip(const ship::coordinate& target_coordinates) override; // Произвести выстрел по кораблю
