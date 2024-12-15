@@ -10,11 +10,11 @@ namespace acg {
         name = name_;
     }
 
-    Armament::armamenttype Armament::getType() {
+    Armament::ArmamentType Armament::getType() {
         return type;
     }
 
-    void Armament::setType(Armament::armamenttype type_) {
+    void Armament::setType(Armament::ArmamentType type_) {
         type = type_;
     }
 
@@ -91,11 +91,46 @@ namespace acg {
     }
 
     void Armament::shoot() {
-        //TODO выстрелить
+        if (!active || current_ammo <= 0) {
+            return;
+        }
+
+        // Проверка времени между выстрелами
+        static auto last_shot_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+        auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>
+                                 (current_time - last_shot_time).count() / 1000.0;
+
+        if (time_diff < (1.0 / rate_of_fire)) {
+            return; // Слишком рано для следующего выстрела
+        }
+
+        current_ammo--;
+        last_shot_time = current_time;
     }
 
     void Armament::reload() {
-        //TODO перезарядить
+        if (!active || current_ammo == max_ammo_capacity) {
+            return;
+        }
+
+        static bool is_reloading = false;
+        static auto reload_start_time = std::chrono::steady_clock::now();
+
+        if (!is_reloading) {
+            reload_start_time = std::chrono::steady_clock::now();
+            is_reloading = true;
+            return;
+        }
+
+        auto current_time = std::chrono::steady_clock::now();
+        auto reload_time = std::chrono::duration_cast<std::chrono::seconds>
+                (current_time - reload_start_time).count();
+
+        if (reload_time >= reload_speed) {
+            current_ammo = max_ammo_capacity;
+            is_reloading = false;
+        }
     }
 
 

@@ -39,7 +39,7 @@ namespace acg {
     }
 
     void Aircraft::setSpeed(double s) {
-        speed = s;
+        if (s >= 0) speed = s;
     }
 
     double Aircraft::getFuelConsumption() const {
@@ -47,7 +47,7 @@ namespace acg {
     }
 
     void Aircraft::setFuelConsumption(double f) {
-        fuel_consumption = f;
+        if (f >= 0) fuel_consumption = f;
     }
 
     double Aircraft::getFuelCapacity() const {
@@ -55,7 +55,7 @@ namespace acg {
     }
 
     void Aircraft::setFuelCapacity(double f) {
-        fuel_capacity = f;
+        if (f >= 0) fuel_capacity = f;
     }
 
     double Aircraft::getRefuelSpeed() const {

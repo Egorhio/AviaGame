@@ -4,24 +4,25 @@
 #define ARMAMENT_H
 
 #include "../Global.h"
+#include <chrono>
 
 namespace acg {
     class Armament {
     public:
-        enum armamenttype { LIGHT, HEAVY };
+        enum class ArmamentType { LIGHT, HEAVY };
 
     private:
-        std::string name;       // Название оружия
-        armamenttype type;      // Тип оружия — использовать Armament::armamenttype
-        std::string ammo_name;  // Название боеприпаса
-        bool active;            // Активность оружия
-        int damage;             // Урон, наносимый оружием
-        double range_of_fire;   // Дальность стрельбы
-        double rate_of_fire;    // Скорострельность (выстрелов в секунду)
-        int max_ammo_capacity;  // Максимальное количество боеприпасов
-        int current_ammo;       // Текущее количество боеприпасов
-        double reload_speed;    // Скорость перезарядки (в секундах)
-        double cost;            // Стоимость оружия
+        std::string name = "Unknown";
+        ArmamentType type = ArmamentType::LIGHT;
+        std::string ammo_name = "Standard";
+        bool active = false;
+        int damage = 0;
+        double range_of_fire = 0.0;
+        double rate_of_fire = 0.0;
+        int max_ammo_capacity = 0;
+        int current_ammo = 0;
+        double reload_speed = 0.0;
+        double cost = 0.0;
 
     public:
         // **Конструктор и деструктор**
@@ -31,8 +32,8 @@ namespace acg {
         // **Геттеры и сеттеры для полей**
         [[nodiscard]] std::string getName() const; // Получить название
         void setName(const std::string& name_);        // Установить название
-        [[nodiscard]] armamenttype getType() ;              // Получить тип оружия
-        void setType(armamenttype type_);              // Установить тип оружия
+        [[nodiscard]] ArmamentType getType() ;              // Получить тип оружия
+        void setType(ArmamentType type_);              // Установить тип оружия
         [[nodiscard]] std::string getAmmoName() const;           // Получить название боеприпаса
         void setAmmoName(const std::string& n);    // Установить название боеприпаса
         [[nodiscard]] bool getActive() const;                     // Активность оружия
