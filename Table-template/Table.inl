@@ -32,8 +32,8 @@ namespace acg {
         for (char c : key) {
             hash = hash * 31 + c;
         }
-        return hash % capacity;
-    } // TODO Более сложная хеш-функция
+        return hash % capacity; // TODO std::hash instead
+    }
 
     template <typename T>
     void ShipTable<T>::rehash() {
