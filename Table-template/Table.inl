@@ -28,11 +28,8 @@ namespace acg {
 
     template <typename T>
     size_t ShipTable<T>::hashFunction(const std::string& key) const {
-        size_t hash = 0;
-        for (char c : key) {
-            hash = hash * 31 + c;
-        }
-        return hash % capacity; // TODO std::hash instead
+        std::hash<std::string> hash_fn;
+        return hash_fn(key) % capacity;
     }
 
     template <typename T>
@@ -149,7 +146,6 @@ namespace acg {
 
     template<class T>
     void ShipTable<T>::Iterator::next() {
-        assert(currentNode != nullptr && "Iterator is out of bounds. Call hasNext() before next()."); // ! ОТЛАДОЧНАЯ ВЕРСИЯ
         currentNode = currentNode->next;
         if (currentNode == nullptr) {
             currentIndex++;
