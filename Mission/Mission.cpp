@@ -345,43 +345,73 @@ namespace acg {
 // **Методы для модификации: сеттеры**
 
     void Mission::setCommander(const std::string& name) {
+        if (name.empty()) {
+            throw std::invalid_argument("Name cannot be empty");
+        }
         commander = name;
     }
 
 
     void Mission::setMaxShips(int maxShips) {
+        if (maxShips < 0) {
+            throw std::invalid_argument("Budget cannot be negative");
+        }
         max_ships = maxShips;
     }
 
     void Mission::setBudget(double newBudget) {
+        if (newBudget < 0) {
+            throw std::invalid_argument("Budget cannot be negative");
+        }
         budget = newBudget;
     }
 
     void Mission::setSpentSum(double spent) {
+        if (spent < 0) {
+            throw std::invalid_argument("Spent Sum cannot be negative");
+        }
         spent_sum = spent;
     }
 
     void Mission::setDamagePerGroup(double damage) {
+        if (damage < 0) {
+            throw std::invalid_argument("Damage per group cannot be negative");
+        }
         damage_per_group = damage;
     }
 
     void Mission::setNecessaryDamage(double damage) {
+        if (damage < 0) {
+            throw std::invalid_argument("Necessary damage cannot be negative");
+        }
         necessary_damage = damage;
     }
 
     void Mission::setTotalEnemyCost(double cost) {
+        if (cost < 0) {
+            throw std::invalid_argument("Total enemy cost cannot be negative");
+        }
         total_enemy_cost = cost;
     }
 
     void Mission::setSavedUnitsCost(double cost) {
+        if (cost < 0) {
+            throw std::invalid_argument("Units cost cannot be negative");
+        }
         saved_units_cost = cost;
     }
 
     void Mission::setSizeBaseA(float size) {
+        if (size < 0) {
+            throw std::invalid_argument("Size base A cannot be negative");
+        }
         size_baseA = size;
     }
 
     void Mission::setSizeBaseB(float size) {
+        if (size < 0) {
+            throw std::invalid_argument("Size base B cannot be negative");
+        }
         size_baseB = size;
     }
 
