@@ -40,6 +40,7 @@ namespace acg {
 
     void Aircraft::setSpeed(double s) {
         if (s >= 0) speed = s;
+        else throw std::invalid_argument("Скорость не может быть отрицательной");
     }
 
     double Aircraft::getFuelConsumption() const {
@@ -48,6 +49,7 @@ namespace acg {
 
     void Aircraft::setFuelConsumption(double f) {
         if (f >= 0) fuel_consumption = f;
+        else throw std::invalid_argument("Расход топлива не может быть отрицательным");
     }
 
     double Aircraft::getFuelCapacity() const {
@@ -56,6 +58,7 @@ namespace acg {
 
     void Aircraft::setFuelCapacity(double f) {
         if (f >= 0) fuel_capacity = f;
+        else throw std::invalid_argument("Объем топлива не может быть отрицательным");
     }
 
     double Aircraft::getRefuelSpeed() const {
@@ -63,7 +66,8 @@ namespace acg {
     }
 
     void Aircraft::setRefuelSpeed(double r) {
-        refuel_speed = r;
+        if (r >= 0) refuel_speed = r;
+        else throw std::invalid_argument("Скорость заправки отрицательная, норм?");
     }
 
     double Aircraft::getCost() const {
@@ -71,7 +75,8 @@ namespace acg {
     }
 
     void Aircraft::setCost(double c) {
-        cost = c;
+        if (c >= 0) cost = c;
+        else throw std::invalid_argument("Стоимость отрицательная, норм?");
     }
 
     double Aircraft::getAttackRadius() const {
@@ -79,10 +84,12 @@ namespace acg {
     }
 
     void Aircraft::setAttackRadius(double r) {
-        attack_radius = r;
+        if (r >= 0) attack_radius = r;
+        else throw std::invalid_argument("Радиус атаки отрицателен, норм?");
     }
 
     double Aircraft::getEffectiveAttackRadius() const {
+        if (!active || durability <= 0) return 0.0;
         // Радиус атаки как функция от скорости и расхода топлива
         double radius_function = (speed * fuel_capacity) / (2 * fuel_consumption);
         // Учитываем состояние самолета (durability влияет на эффективный радиус)
@@ -96,11 +103,8 @@ namespace acg {
     void Aircraft::receiveDamage(int damage_received) {
         if (!active) return;
         durability -= damage_received;
-        // Уменьшение стоимости самолёта пропорционально полученному урону
         double damage_factor = static_cast<double>(damage_received) / 100.0;
         cost *= (1.0 - damage_factor * 0.3); // Уменьшаем стоимость до 30% при максимальном уроне
-
-        // Уменьшение скорости при повреждениях
         speed *= (1.0 - damage_factor * 0.2); // Уменьшаем скорость до 20% при максимальном уроне
         if (durability <= 0) {
             durability = 0;

@@ -1,56 +1,178 @@
-#ifndef AIRCRAFT_H
-#define AIRCRAFT_H
+#pragma once
 
-#include "../Global.h"
+#include <string>
+#include <stdexcept>
 
 namespace acg {
+
+    /**
+     * @brief Класс, представляющий самолет
+     * @details Класс содержит основные характеристики и функциональность самолета,
+     * включая тип, урон, прочность, скорость и топливные характеристики
+     */
     class Aircraft {
     public:
-        enum class AircraftType { FIGHTER, ATTACK };
+        /**
+         * @brief Перечисление типов самолетов
+         */
+        enum class AircraftType {
+            FIGHTER,    ///< Истребитель
+            ATTACK      ///< Штурмовик
+        };
+
     private:
-        AircraftType type = AircraftType::FIGHTER;  // Тип самолета
-        int damage = 0;                             // Урон
-        bool active = false;                        // Активен ли самолет
-        int durability = 100;                       // Прочность самолета
-        double speed = 0.0;                         // Скорость
-        double fuel_consumption = 0.0;              // Расход топлива (литров на километр)
-        double fuel_capacity = 0.0;                 // Объем топлива (литров)
-        double refuel_speed = 0.0;                  // Скорость заправки (литров в секунду)
-        double cost = 0.0;                          // Стоимость самолета
-        double attack_radius = 0.0;                 // Радиус атаки самолета (в километрах)
+        AircraftType type = AircraftType::FIGHTER;   ///< Тип самолета
+        int damage = 0;                              ///< Урон самолета
+        bool active = false;                         ///< Флаг активности самолета
+        int durability = 100;                        ///< Прочность самолета
+        double speed = 0.0;                          ///< Скорость самолета
+        double fuel_consumption = 0.0;               ///< Расход топлива (л/км)
+        double fuel_capacity = 0.0;                  ///< Объем топливного бака (л)
+        double refuel_speed = 0.0;                   ///< Скорость заправки (л/с)
+        double cost = 0.0;                           ///< Стоимость самолета
+        double attack_radius = 0.0;                  ///< Радиус атаки (км)
 
     public:
+        /** @brief Конструктор по умолчанию */
         Aircraft() = default;
-        ~Aircraft() = default;
 
-        // **Геттеры и сеттеры для каждого поля**
-        [[nodiscard]] AircraftType getType() const;                // Получить тип самолета
-        void setType(AircraftType t);                // Установить тип самолета
-        [[nodiscard]] int getDamage() const ;                       // Получить количество урона
-        void setDamage(int d);                       // Установить урон
-        [[nodiscard]] bool getActive() const ;                       // Активен ли самолет
-        void setActive(bool a);                      // Установить активность
-        [[nodiscard]] int getDurability() const;                   // Получить прочность
-        void setDurability(int d);                   // Установить прочность
-        [[nodiscard]] double getSpeed() const;                     // Получить скорость
-        void setSpeed(double s);                     // Установить скорость
-        [[nodiscard]] double getFuelConsumption() const;           // Получить расход топлива
-        void setFuelConsumption(double f);           // Установить расход топлива
-        [[nodiscard]] double getFuelCapacity() const;              // Получить объем топлива
-        void setFuelCapacity(double f);              // Установить объем топлива
-        [[nodiscard]] double getRefuelSpeed() const;               // Получить скорость заправки
-        void setRefuelSpeed(double r);               // Установить скорость заправки
-        [[nodiscard]] double getCost() const;                      // Получить стоимость самолета
-        void setCost(double c);                      // Установить стоимость
-        [[nodiscard]] double getAttackRadius() const;              // Получить радиус атаки
-        void setAttackRadius(double r);              // Установить радиус атаки
+        /**
+         * @brief Получить тип самолета
+         * @return Тип самолета (FIGHTER/ATTACK)
+         */
+        [[nodiscard]] AircraftType getType() const;
 
-        // **Методы для самолета**
-        void makeAttackRun(double distance);         // Сделать налет (расстояние)
-        void receiveDamage(int damage_received);     // Получить повреждение
-        [[nodiscard]] double getEffectiveAttackRadius() const;     // Получить радиус атаки (эффективный) через другие методы
+        /**
+         * @brief Установить тип самолета
+         * @param t Новый тип самолета
+         */
+        void setType(AircraftType t);
+
+        /**
+         * @brief Получить количество урона
+         * @return Урон самолета
+         */
+        [[nodiscard]] int getDamage() const;
+
+        /**
+         * @brief Установить урон самолета
+         * @param d Новый урон
+         */
+        void setDamage(int d);
+
+        /**
+         * @brief Проверить, активен ли самолет
+         * @return Статус активности
+         */
+        [[nodiscard]] bool getActive() const;
+
+        /**
+         * @brief Установить активность самолета
+         * @param a Новый статус активности
+         */
+        void setActive(bool a);
+
+        /**
+         * @brief Получить прочность самолета
+         * @return Прочность самолета
+         */
+        [[nodiscard]] int getDurability() const;
+
+        /**
+         * @brief Установить прочность самолета
+         * @param d Новая прочность
+         */
+        void setDurability(int d);
+
+        /**
+         * @brief Получить скорость самолета
+         * @return Скорость самолета
+         */
+        [[nodiscard]] double getSpeed() const;
+
+        /**
+         * @brief Установить скорость самолета
+         * @param s Новая скорость
+         */
+        void setSpeed(double s);
+
+        /**
+         * @brief Получить расход топлива
+         * @return Расход топлива (л/км)
+         */
+        [[nodiscard]] double getFuelConsumption() const;
+
+        /**
+         * @brief Установить расход топлива
+         * @param f Новый расход топлива
+         */
+        void setFuelConsumption(double f);
+
+        /**
+         * @brief Получить объем топливного бака
+         * @return Объем топливного бака (л)
+         */
+        [[nodiscard]] double getFuelCapacity() const;
+
+        /**
+         * @brief Установить объем топливного бака
+         * @param f Новый объем топлива
+         */
+        void setFuelCapacity(double f);
+
+        /**
+         * @brief Получить скорость заправки
+         * @return Скорость заправки (л/с)
+         */
+        [[nodiscard]] double getRefuelSpeed() const;
+
+        /**
+         * @brief Установить скорость заправки
+         * @param r Новая скорость заправки
+         */
+        void setRefuelSpeed(double r);
+
+        /**
+         * @brief Получить стоимость самолета
+         * @return Стоимость самолета
+         */
+        [[nodiscard]] double getCost() const;
+
+        /**
+         * @brief Установить стоимость самолета
+         * @param c Новая стоимость
+         */
+        void setCost(double c);
+
+        /**
+         * @brief Получить радиус атаки
+         * @return Радиус атаки (км)
+         */
+        [[nodiscard]] double getAttackRadius() const;
+
+        /**
+         * @brief Установить радиус атаки
+         * @param r Новый радиус атаки
+         */
+        void setAttackRadius(double r);
+
+        /**
+         * @brief Выполнить атакующий налет
+         * @param distance Дистанция до цели
+         */
+        void makeAttackRun(double distance);
+
+        /**
+         * @brief Получить урон
+         * @param damage_received Количество получаемого урона
+         */
+        void receiveDamage(int damage_received);
+
+        /**
+         * @brief Рассчитать эффективный радиус атаки
+         * @return Эффективный радиус атаки с учетом других параметров
+         */
+        [[nodiscard]] double getEffectiveAttackRadius() const;
     };
 
-} //namespace acg
-
-#endif // AIRCRAFT_H
+} // namespace acg
