@@ -15,7 +15,8 @@ namespace acg {
     }
 
     void Aircraft::setDamage(int d) {
-        damage = d;
+        if (d >= 0) damage = d;
+        else throw std::invalid_argument("Урон самолёта не может быть отрицательным");
     }
 
     bool Aircraft::getActive() const {
@@ -31,7 +32,8 @@ namespace acg {
     }
 
     void Aircraft::setDurability(int d) {
-        durability = d;
+        if (d >= 0) durability = d;
+        else throw std::invalid_argument("Прочность не может быть отрицательной");
     }
 
     double Aircraft::getSpeed() const {

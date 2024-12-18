@@ -1,5 +1,4 @@
-#ifndef SHIP_INTERFACE_H
-#define SHIP_INTERFACE_H
+#pragma once
 
 #include "Armament.h"
 #include "Aircraft.h"
@@ -27,7 +26,11 @@ namespace acg {
     class IShip {
     public:
         virtual ~IShip() = default;
-        enum class shiptype { CRUISER, AIRCRAFTCARRIER, AVIATORCRUISER };
+        enum class shiptype {
+            CRUISER,
+            AIRCRAFTCARRIER,
+            AVIATORCRUISER
+        };
 
         // **Методы для любого судна**
         // **Это геттеры и сеттеры, для которых не нужно переопределение**
@@ -39,5 +42,3 @@ namespace acg {
 
     };
 } // namespace acg
-
-#endif //SHIP_INTERFACE_H

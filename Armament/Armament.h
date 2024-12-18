@@ -1,60 +1,190 @@
-#ifndef ARMAMENT_H
-#define ARMAMENT_H
+#pragma once
 
-#include "../Global.h"
 #include <chrono>
+#include <string>
 
 namespace acg {
+
+/**
+ * @brief Класс, представляющий вооружение корабля.
+ *
+ * Класс Armament инкапсулирует основные характеристики и поведение
+ * вооружения, включая тип, урон, дальность, скорострельность и другие параметры.
+ */
     class Armament {
     public:
-        enum class ArmamentType { LIGHT, HEAVY };
+        /**
+         * @brief Перечисление типов вооружения.
+         */
+        enum class ArmamentType {
+            LIGHT,  ///< Легкое вооружение
+            HEAVY   ///< Тяжелое вооружение
+        };
 
     private:
-        std::string name = "Unknown";
-        ArmamentType type = ArmamentType::LIGHT;
-        std::string ammo_name = "Standard";
-        bool active = false;
-        int damage = 0;
-        double range_of_fire = 0.0;
-        double rate_of_fire = 0.0;
-        int max_ammo_capacity = 0;
-        int current_ammo = 0;
-        double reload_speed = 0.0;
-        double cost = 0.0;
+        std::string name = "Unknown";         ///< Название оружия
+        ArmamentType type = ArmamentType::LIGHT; ///< Тип оружия
+        std::string ammo_name = "Standard";   ///< Название боеприпаса
+        bool active = false;                  ///< Статус активности оружия
+        int damage = 0;                       ///< Урон, наносимый оружием
+        double range_of_fire = 0.0;           ///< Дальность стрельбы
+        double rate_of_fire = 0.0;            ///< Скорострельность
+        int max_ammo_capacity = 0;            ///< Максимальная емкость боеприпасов
+        int current_ammo = 0;                 ///< Текущее количество боеприпасов
+        double reload_speed = 0.0;            ///< Скорость перезарядки
+        double cost = 0.0;                    ///< Стоимость оружия
 
     public:
-        // **Конструктор и деструктор**
+        /**
+         * @brief Конструктор по умолчанию.
+         */
         Armament() = default;
-        ~Armament() = default;
 
-        // **Геттеры и сеттеры для полей**
-        [[nodiscard]] std::string getName() const; // Получить название
-        void setName(const std::string& name_);        // Установить название
-        [[nodiscard]] ArmamentType getType() const;              // Получить тип оружия
-        void setType(ArmamentType type_);              // Установить тип оружия
-        [[nodiscard]] std::string getAmmoName() const;           // Получить название боеприпаса
-        void setAmmoName(const std::string& n);    // Установить название боеприпаса
-        [[nodiscard]] bool getActive() const;                     // Активность оружия
-        void setActive(bool a);                    // Установить активность оружия
-        [[nodiscard]] int getDamage() const;                     // Получить урон
-        void setDamage(int d);                     // Установить урон
-        [[nodiscard]] double getRangeOfFire() const;             // Получить дальность стрельбы
-        void setRangeOfFire(double r);             // Установить дальность стрельбы
-        [[nodiscard]] double getRateOfFire() const;              // Получить скорострельность
-        void setRateOfFire(double r);              // Установить скорострельность
-        [[nodiscard]] int getMaxAmmoCapacity() const;            // Получить максимальную емкость патронов
-        void setMaxAmmoCapacity(int cap);          // Установить максимальную емкость
-        [[nodiscard]] int getCurrentAmmo() const;                // Получить текущее количество боеприпасов
-        void setCurrentAmmo(int ammo);             // Установить текущее количество боеприпасов
-        [[nodiscard]] double getReloadSpeed() const;             // Получить скорость перезарядки
-        void setReloadSpeed(double s);             // Установить скорость перезарядки
-        [[nodiscard]] double getCost() const;                    // Получить стоимость оружия
-        void setCost(double c);                    // Установить стоимость оружия
+        /**
+         * @brief Получить название оружия.
+         * @return Название оружия.
+         */
+        [[nodiscard]] std::string getName() const;
 
-        // **Методы оружия**
-        void shoot();                              // Выстрелить
-        void reload();                             // Перезарядить
+        /**
+         * @brief Установить название оружия.
+         * @param name_ Новое название.
+         */
+        void setName(const std::string& name_);
+
+        /**
+         * @brief Получить тип оружия.
+         * @return Тип оружия.
+         */
+        [[nodiscard]] ArmamentType getType() const;
+
+        /**
+         * @brief Установить тип оружия.
+         * @param type_ Новый тип.
+         */
+        void setType(ArmamentType type_);
+
+        /**
+         * @brief Получить название боеприпаса.
+         * @return Название боеприпаса.
+         */
+        [[nodiscard]] std::string getAmmoName() const;
+
+        /**
+         * @brief Установить название боеприпаса.
+         * @param n Новое название боеприпаса.
+         */
+        void setAmmoName(const std::string& n);
+
+        /**
+         * @brief Проверить, активно ли оружие.
+         * @return Статус активности.
+         */
+        [[nodiscard]] bool getActive() const;
+
+        /**
+         * @brief Установить активность оружия.
+         * @param a Новый статус активности.
+         */
+        void setActive(bool a);
+
+        /**
+         * @brief Получить урон оружия.
+         * @return Урон.
+         */
+        [[nodiscard]] int getDamage() const;
+
+        /**
+         * @brief Установить урон оружия.
+         * @param d Новый урон.
+         */
+        void setDamage(int d);
+
+        /**
+         * @brief Получить дальность стрельбы.
+         * @return Дальность стрельбы.
+         */
+        [[nodiscard]] double getRangeOfFire() const;
+
+        /**
+         * @brief Установить дальность стрельбы.
+         * @param r Новая дальность.
+         */
+        void setRangeOfFire(double r);
+
+        /**
+         * @brief Получить скорострельность.
+         * @return Скорострельность.
+         */
+        [[nodiscard]] double getRateOfFire() const;
+
+        /**
+         * @brief Установить скорострельность.
+         * @param r Новая скорострельность.
+         */
+        void setRateOfFire(double r);
+
+        /**
+         * @brief Получить максимальную емкость боеприпасов.
+         * @return Максимальная емкость.
+         */
+        [[nodiscard]] int getMaxAmmoCapacity() const;
+
+        /**
+         * @brief Установить максимальную емкость боеприпасов.
+         * @param cap Новая емкость.
+         */
+        void setMaxAmmoCapacity(int cap);
+
+        /**
+         * @brief Получить текущее количество боеприпасов.
+         * @return Текущее количество боеприпасов.
+         */
+        [[nodiscard]] int getCurrentAmmo() const;
+
+        /**
+         * @brief Установить текущее количество боеприпасов.
+         * @param ammo Новое количество боеприпасов.
+         */
+        void setCurrentAmmo(int ammo);
+
+        /**
+         * @brief Получить скорость перезарядки.
+         * @return Скорость перезарядки.
+         */
+        [[nodiscard]] double getReloadSpeed() const;
+
+        /**
+         * @brief Установить скорость перезарядки.
+         * @param s Новая скорость перезарядки.
+         */
+        void setReloadSpeed(double s);
+
+        /**
+         * @brief Получить стоимость оружия.
+         * @return Стоимость.
+         */
+        [[nodiscard]] double getCost() const;
+
+        /**
+         * @brief Установить стоимость оружия.
+         * @param c Новая стоимость.
+         */
+        void setCost(double c);
+
+        /**
+         * @brief Произвести выстрел.
+         *
+         * Уменьшает количество боеприпасов при успешном выстреле.
+         */
+        void shoot();
+
+        /**
+         * @brief Перезарядить оружие.
+         *
+         * Восполняет боезапас до максимального значения.
+         */
+        void reload();
     };
-} // namespace acg
 
-#endif //ARMAMENT_H
+} // namespace acg

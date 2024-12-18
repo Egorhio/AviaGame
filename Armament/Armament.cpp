@@ -7,6 +7,9 @@ namespace acg {
     }
 
     void Armament::setName(const std::string &name_) {
+        if (name_.empty()) {
+            throw std::invalid_argument("Название оружия не может быть пустым");
+        }
         name = name_;
     }
 
@@ -15,6 +18,9 @@ namespace acg {
     }
 
     void Armament::setType(Armament::ArmamentType type_) {
+        if (type_ != ArmamentType::LIGHT && type_ != ArmamentType::HEAVY) {
+            throw std::invalid_argument("Неверный тип оружия");
+        }
         type = type_;
     }
 
@@ -23,6 +29,9 @@ namespace acg {
     }
 
     void Armament::setAmmoName(const std::string &n) {
+        if (n.empty()) {
+            throw std::invalid_argument("Название боеприпасов не может быть пустым");
+        }
         ammo_name = n;
     }
 
@@ -39,6 +48,9 @@ namespace acg {
     }
 
     void Armament::setDamage(int d) {
+        if (d < 0) {
+            throw std::invalid_argument("Урон не может быть отрицательным");
+        }
         damage = d;
     }
 
@@ -47,6 +59,9 @@ namespace acg {
     }
 
     void Armament::setRangeOfFire(double r) {
+        if (r <= 0) {
+            throw std::invalid_argument("Дальность стрельбы должна быть положительной");
+        }
         range_of_fire = r;
     }
 
@@ -55,6 +70,9 @@ namespace acg {
     }
 
     void Armament::setRateOfFire(double r) {
+        if (r <= 0) {
+            throw std::invalid_argument("Скорострельность должна быть положительной");
+        }
         rate_of_fire = r;
     }
 
@@ -63,6 +81,9 @@ namespace acg {
     }
 
     void Armament::setMaxAmmoCapacity(int cap) {
+        if (cap < 0) {
+            throw std::invalid_argument("Ёмкость магазина не может быть отрицательной");
+        }
         max_ammo_capacity = cap;
     }
 
@@ -71,6 +92,12 @@ namespace acg {
     }
 
     void Armament::setCurrentAmmo(int ammo) {
+        if (ammo < 0) {
+            throw std::invalid_argument("Количество патронов не может быть отрицательным");
+        }
+        if (ammo > max_ammo_capacity) {
+            throw std::invalid_argument("Превышена ёмкость магазина");
+        }
         current_ammo = ammo;
     }
 
@@ -79,6 +106,9 @@ namespace acg {
     }
 
     void Armament::setReloadSpeed(double s) {
+        if (s <= 0) {
+            throw std::invalid_argument("Скорость перезарядки должна быть положительной");
+        }
         reload_speed = s;
     }
 
@@ -87,6 +117,9 @@ namespace acg {
     }
 
     void Armament::setCost(double c) {
+        if (c < 0) {
+            throw std::invalid_argument("Стоимость не может быть отрицательной");
+        }
         cost = c;
     }
 
@@ -94,44 +127,32 @@ namespace acg {
         if (!active || current_ammo <= 0) {
             return;
         }
-
-        // Проверка времени между выстрелами
         static auto last_shot_time = std::chrono::steady_clock::now();
         auto current_time = std::chrono::steady_clock::now();
-        auto time_diff = std::chrono::duration<double>
-                (current_time - last_shot_time).count();
-
+        auto time_diff = std::chrono::duration<double>(current_time - last_shot_time).count();
         if (time_diff < (1.0 / static_cast<double>(rate_of_fire))) {
             return; // Слишком рано для следующего выстрела
         }
-
         current_ammo--;
         last_shot_time = current_time;
     }
-
 
     void Armament::reload() {
         if (!active || current_ammo == max_ammo_capacity) {
             return;
         }
-
         static bool is_reloading = false;
-        static auto reload_start_time = std::chrono::steady_clock::now(); // TODO нужен ли chrono?
-
+        static auto reload_start_time = std::chrono::steady_clock::now();
         if (!is_reloading) {
             reload_start_time = std::chrono::steady_clock::now();
             is_reloading = true;
             return;
         }
-
         auto current_time = std::chrono::steady_clock::now();
-        auto reload_time = std::chrono::duration_cast<std::chrono::seconds>
-                (current_time - reload_start_time).count();
-
-        if (reload_time >= static_cast<int64_t>(reload_speed)) { // Приведение к конкретному типу
+        auto reload_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - reload_start_time).count();
+        if (reload_time >= static_cast<int64_t>(reload_speed)) {
             current_ammo = max_ammo_capacity;
             is_reloading = false;
         }
     }
-
 } // namespace acg

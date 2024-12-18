@@ -1,5 +1,4 @@
-#ifndef SHIP_H
-#define SHIP_H
+#pragma once
 
 #include "Ship-Interface.h"
 
@@ -61,5 +60,3 @@ namespace acg {
     double calculateDistance(const ship::coordinate &target_coordinates, const ship::coordinate &current_pos);
 
 } // namespace acg
-
-#endif // SHIP_H
