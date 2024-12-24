@@ -127,14 +127,19 @@ namespace acg {
         if (!active || current_ammo <= 0) {
             return;
         }
+
+        // Используем статическую переменную, но инициализируем ее только один раз
+        static bool first_shoot = true;
         static auto last_shot_time = std::chrono::steady_clock::now();
         auto current_time = std::chrono::steady_clock::now();
-        auto time_diff = std::chrono::duration<double>(current_time - last_shot_time).count();
-        if (time_diff < (1.0 / static_cast<double>(rate_of_fire))) {
-            return; // Слишком рано для следующего выстрела
+        auto time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(
+                current_time - last_shot_time).count();
+
+        if (time_diff >= (1.0 / rate_of_fire) || first_shoot) {
+            current_ammo--;
+            last_shot_time = current_time;
         }
-        current_ammo--;
-        last_shot_time = current_time;
+        first_shoot = false;
     }
 
     void Armament::reload() {

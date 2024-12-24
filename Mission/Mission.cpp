@@ -1,7 +1,5 @@
 #include "Mission.h"
 
-#include <utility>
-
 namespace acg {
 
     // Проверка бюджета
@@ -14,85 +12,82 @@ namespace acg {
         return budget - spent_sum;
     }
 
-    bool Mission::buyShip(const std::string& call_sign, Ship* ship) {
-        if (!checkBudget(ship->calculateTotalCost())) {
-            return false;
-        }
+    MissionError Mission::buyShip(const std::string& call_sign, Ship* ship) {
+        if (call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
+        if (!ship) return MissionError::SHIP_NOT_FOUND;
+        if (shipGroupTable.getShipCount() >= max_ships) return MissionError::MAX_SHIPS_REACHED;
+        if (!checkBudget(ship->calculateTotalCost())) return MissionError::INSUFFICIENT_FUNDS;
         shipGroupTable.addShip(call_sign, ship);
         spent_sum += ship->calculateTotalCost();
-        return true;
+        return MissionError::SUCCESS;
     }
 
-    bool Mission::sellShip(const std::string& call_sign) {
+    MissionError Mission::sellShip(const std::string& call_sign) {
+        if (call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
         Ship* ship = shipGroupTable.getShip(call_sign);
-        if (!ship) return false;
-        spent_sum -= ship->calculateTotalCost() * 0.7; // Возврат 70% стоимости
+        if (!ship) return MissionError::SHIP_NOT_FOUND;
+        spent_sum -= ship->calculateTotalCost() * 0.7;
         shipGroupTable.removeShip(call_sign);
-        return true;
+        return MissionError::SUCCESS;
     }
 
-    bool Mission::buyPlaneForShip(const std::string& call_sign, Aircraft* plane) {
+    MissionError Mission::buyPlaneForShip(const std::string& call_sign, Aircraft* plane) {
+        if (call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
+        if (!plane) return MissionError::AIRCRAFT_NOT_FOUND;
         Ship* ship = shipGroupTable.getShip(call_sign);
-        if (!ship || !checkBudget(plane->getCost())) {
-            return false;
-        }
-        // Проверяем тип корабля и приводим к нужному классу
-        auto* aircarrier = dynamic_cast<AircraftCarrier*>(ship);
-        auto* aviator = dynamic_cast<AviatorCruiser*>(ship);
-        // Если корабль не подходит под оба типа, операция невозможна
-        if (!aircarrier && !aviator) {
-            return false;
-        }
-        // Определяем контейнер самолетов у соответствующего типа
+        if (!ship) return MissionError::SHIP_NOT_FOUND;
+        if (!checkBudget(plane->getCost())) return MissionError::INSUFFICIENT_FUNDS;
+        // Приведение типов и проверка возможности размещения авиации
+        auto* aircarrier = dynamic_cast<IAircraftCarrier*>(ship);
+        auto* aviator = dynamic_cast<IAviatorCruiser*>(ship);
+        if (!aircarrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
+        // Получение текущего списка самолётов
         ship::airvector current_aircraft;
-        if (!getAircraftList(aircarrier, aviator, current_aircraft)) {
-            return false;
-        }
-        // Добавляем новый самолет в список
+        if (!getAircraftList(aircarrier, aviator, current_aircraft)) return MissionError::STORAGE_FULL;
+        // Добавление самолёта и обновление списка
         current_aircraft.push_back({*plane, {0, 0}});
-        // Обновляем список самолетов
-        if (aircarrier) {
-            aircarrier->modifyAircrafts(current_aircraft);
-        } else {
-            aviator->modifyAircrafts(current_aircraft);
+        try {
+            if (aircarrier) {
+                aircarrier->modifyAircrafts(current_aircraft);
+            } else {
+                aviator->modifyAircrafts(current_aircraft);
+            }
+        } catch (const std::invalid_argument&) {
+            return MissionError::STORAGE_FULL;
         }
-        // Обновляем потраченную сумму
+        // Обновление бюджета
         spent_sum += plane->getCost();
-        // Возвращаем успех операции
-        return true;
+        return MissionError::SUCCESS;
     }
 
-    bool Mission::sellPlaneFromShip(const std::string& call_sign, Aircraft* plane) {
+    MissionError Mission::sellPlaneFromShip(const std::string& call_sign, Aircraft* plane) {
+        if (call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
+        if (!plane) return MissionError::AIRCRAFT_NOT_FOUND;
         Ship* ship = shipGroupTable.getShip(call_sign);
-        if (!ship) {
-            return false; // Корабль не найден
-        }
-        // Проверяем, является ли корабль носителем авиации
+        if (!ship) return MissionError::SHIP_NOT_FOUND;
         auto* aircarrier = dynamic_cast<AircraftCarrier*>(ship);
         auto* aviator = dynamic_cast<AviatorCruiser*>(ship);
-        if (!aircarrier && !aviator) {
-            return false; // Корабль не может нести авиацию
-        }
-        // Получаем текущий список самолетов
+        if (!aircarrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
         ship::airvector current_aircraft;
-        if (!getAircraftList(aircarrier, aviator, current_aircraft)) {
-            return false;
-        }
-        // Ищем и удаляем самолет
+        if (!getAircraftList(aircarrier, aviator, current_aircraft)) return MissionError::VOID_LIST;
+        // Поиск и удаление самолета
         for (auto it = current_aircraft.begin(); it != current_aircraft.end(); ++it) {
-            if (&(it->first) == plane) {
+            if (it->first == *plane) {
                 spent_sum -= plane->getCost() * 0.7; // Возврат 70% стоимости
                 current_aircraft.erase(it);
-                // Обновляем список самолетов на корабле
-                if (aircarrier) {
-                    aircarrier->modifyAircrafts(current_aircraft);
-                } else {
-                    aviator->modifyAircrafts(current_aircraft);
+                try {
+                    if (aircarrier) {
+                        aircarrier->modifyAircrafts(current_aircraft);
+                    } else {
+                        aviator->modifyAircrafts(current_aircraft);
+                    }
+                    return MissionError::SUCCESS;
+                } catch (const std::invalid_argument&) {
+                    return MissionError::STORAGE_FULL;
                 }
-                return true;
             }
         }
-        return false; // Самолет не найден
+        return MissionError::AIRCRAFT_NOT_FOUND;
     }
 
     // Получение списка самолетов с корабля
@@ -122,164 +117,185 @@ namespace acg {
         return true;
     }
 
-
-
-    bool Mission::transferPlane(Aircraft* plane, const std::string& from_ship, const std::string& to_ship) {
+    MissionError Mission::transferPlane(Aircraft* plane, const std::string& from_ship, const std::string& to_ship) {
+        if (from_ship.empty() || to_ship.empty()) return MissionError::EMPTY_CALLSIGN;
+        if (!plane) return MissionError::AIRCRAFT_NOT_FOUND;
         // Получаем корабли из таблицы
         Ship* fromShip = shipGroupTable.getShip(from_ship);
         Ship* toShip = shipGroupTable.getShip(to_ship);
-        if (!fromShip || !toShip) return false;
-
-        // Проверяем, что оба корабля могут работать с авиацией
+        if (!fromShip || !toShip) return MissionError::SHIP_NOT_FOUND;
+        // Проверяем типы кораблей
         auto* fromCarrier = dynamic_cast<AircraftCarrier*>(fromShip);
         auto* fromAviator = dynamic_cast<AviatorCruiser*>(fromShip);
         auto* toCarrier = dynamic_cast<AircraftCarrier*>(toShip);
         auto* toAviator = dynamic_cast<AviatorCruiser*>(toShip);
-        if ((!fromCarrier && !fromAviator) || (!toCarrier && !toAviator)) return false;
 
+        if ((!fromCarrier && !fromAviator) || (!toCarrier && !toAviator))
+            return MissionError::INVALID_SHIP_TYPE;
         // Получаем списки самолётов
-        std::optional<ship::airvector> fromAircrafts = fromCarrier ? fromCarrier->getAircrafts() : fromAviator->getAircrafts();
-        std::optional<ship::airvector> toAircrafts = toCarrier ? toCarrier->getAircrafts() : toAviator->getAircrafts();
-        if (!fromAircrafts || !toAircrafts) return false;
-
+        ship::airvector fromAircrafts, toAircrafts;
+        if (!getAircraftList(fromCarrier, fromAviator, fromAircrafts))
+            return MissionError::VOID_LIST;
+        if (!getAircraftList(toCarrier, toAviator, toAircrafts))
+            return MissionError::VOID_LIST;
         // Проверяем вместимость принимающего корабля
         int maxCapacity = toCarrier ? toCarrier->getMaxAircraftCapacity() : toAviator->getMaxAircraftCapacity();
-        if (toAircrafts->size() >= maxCapacity) return false;
+        if (toAircrafts.size() >= maxCapacity) return MissionError::STORAGE_FULL;
 
-        // Удаляем самолёт из первого корабля и добавляем во второй
-        ship::airvector newFromAircrafts = *fromAircrafts;
-        ship::airvector newToAircrafts = *toAircrafts;
-
-        return transferAircraftBetweenShips(plane, newFromAircrafts, newToAircrafts, fromCarrier, fromAviator, toCarrier, toAviator);
-    }
-
-    bool Mission::transferAircraftBetweenShips(Aircraft* plane, ship::airvector& fromAircrafts,
-                                               ship::airvector& toAircrafts,
-                                               AircraftCarrier* fromCarrier,
-                                               AviatorCruiser* fromAviator,
-                                               AircraftCarrier* toCarrier,
-                                               AviatorCruiser* toAviator) {
+        // Ищем и перемещаем самолёт
         for (auto it = fromAircrafts.begin(); it != fromAircrafts.end(); ++it) {
-            if (&(it->first) == plane) {
+            if (it->first == *plane) {
                 toAircrafts.push_back(*it);
                 fromAircrafts.erase(it);
 
-                if (fromCarrier) fromCarrier->modifyAircrafts(fromAircrafts);
-                else fromAviator->modifyAircrafts(fromAircrafts);
-
-                if (toCarrier) toCarrier->modifyAircrafts(toAircrafts);
-                else toAviator->modifyAircrafts(toAircrafts);
-
-                return true;
+                // Обновляем списки самолётов на кораблях
+                try {
+                    if (fromCarrier) fromCarrier->modifyAircrafts(fromAircrafts);
+                    else fromAviator->modifyAircrafts(fromAircrafts);
+                    if (toCarrier) toCarrier->modifyAircrafts(toAircrafts);
+                    else toAviator->modifyAircrafts(toAircrafts);
+                    return MissionError::SUCCESS;
+                }
+                catch (const std::invalid_argument&) {
+                    return MissionError::STORAGE_FULL;
+                }
             }
         }
-        return false;
+
+        return MissionError::AIRCRAFT_NOT_FOUND;
     }
 
-    void Mission::destroyShip(const std::string& call_sign) {
+    MissionError Mission::destroyShip(const std::string& call_sign) {
+        if (call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
         Ship* ship = shipGroupTable.getShip(call_sign);
-        if (ship) {
-            ship->setDurability(0);
-            shipGroupTable.removeShip(call_sign);
-        }
+        if (!ship) return MissionError::SHIP_NOT_FOUND;
+        ship->setDurability(0);
+        shipGroupTable.removeShip(call_sign);
+        return MissionError::SUCCESS;
     }
 
-    bool Mission::buyWeaponForShip(const std::string& ship_call_sign, Armament* weapon) {
-        // Получаем корабль по позывному
+    MissionError Mission::buyWeaponForShip(const std::string& ship_call_sign, Armament* weapon) {
+        if (ship_call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
+        if (!weapon) return MissionError::WEAPON_NOT_FOUND;
         Ship* ship = shipGroupTable.getShip(ship_call_sign);
-        if (!ship || !checkBudget(weapon->getCost())) {
-            return false; // Корабль не найден или недостаточно средств
-        }
-        // Проверяем тип корабля и приводим к нужному классу
+        if (!ship) return MissionError::SHIP_NOT_FOUND;
+        if (!checkBudget(weapon->getCost()))
+            return MissionError::INSUFFICIENT_FUNDS;
         auto* cruiser = dynamic_cast<Cruiser*>(ship);
         auto* aviator = dynamic_cast<AviatorCruiser*>(ship);
-        if (!cruiser && !aviator) {
-            return false; // Корабль не может нести вооружение
-        }
-        // Получаем текущее вооружение
+        if (!cruiser && !aviator) return MissionError::INVALID_SHIP_TYPE;
         ship::armvector current_armament;
-        if (!getArmamentList(cruiser, aviator, current_armament)) {
-            return false;
-        }
-        // Добавляем новое оружие
+        if (!getArmamentList(cruiser, aviator, current_armament))
+            return MissionError::VOID_LIST;
         current_armament.push_back(*weapon);
-        // Обновляем вооружение на корабле
-        if (cruiser) {
-            cruiser->modifyArmament(current_armament);
-        } else {
-            aviator->modifyArmament(current_armament);
+        try {
+            if (cruiser) {
+                cruiser->modifyArmament(current_armament);
+            } else {
+                aviator->modifyArmament(current_armament);
+            }
+        } catch (const std::invalid_argument&) {
+            return MissionError::STORAGE_FULL;
         }
+
         spent_sum += weapon->getCost();
-        return true;
+        return MissionError::SUCCESS;
     }
 
-    bool Mission::sellWeaponFromShip(const std::string& ship_call_sign, Armament* weapon) {
+    MissionError Mission::sellWeaponFromShip(const std::string& ship_call_sign, Armament* weapon) {
+        if (ship_call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
+        if (!weapon) return MissionError::WEAPON_NOT_FOUND;
         Ship* ship = shipGroupTable.getShip(ship_call_sign);
-        if (!ship) return false;
+        if (!ship) return MissionError::SHIP_NOT_FOUND;
         auto* cruiser = dynamic_cast<Cruiser*>(ship);
         auto* aviator = dynamic_cast<AviatorCruiser*>(ship);
-        if (!cruiser && !aviator) return false;
+        if (!cruiser && !aviator) return MissionError::INVALID_SHIP_TYPE;
         ship::armvector current_armament;
-        if (!getArmamentList(cruiser, aviator, current_armament)) {
-            return false;
-        }
+        if (!getArmamentList(cruiser, aviator, current_armament))
+            return MissionError::VOID_LIST;
         // Ищем и удаляем оружие
         for (auto it = current_armament.begin(); it != current_armament.end(); ++it) {
             if (&(*it) == weapon) {
                 spent_sum -= weapon->getCost() * 0.7; // Возврат 70% стоимости
                 current_armament.erase(it);
-                if (cruiser) {
-                    cruiser->modifyArmament(current_armament);
-                } else {
-                    aviator->modifyArmament(current_armament);
+                try {
+                    if (cruiser) {
+                        cruiser->modifyArmament(current_armament);
+                    } else {
+                        aviator->modifyArmament(current_armament);
+                    }
+                    return MissionError::SUCCESS;
+                } catch (const std::invalid_argument&) {
+                    return MissionError::STORAGE_FULL;
                 }
-                return true;
             }
         }
-        return false;
+        return MissionError::WEAPON_NOT_FOUND;
     }
 
-    void Mission::markEnemyAsReached(const std::string& enemy_call_sign) {
+    MissionError Mission::markEnemyAsReached(const std::string& enemy_call_sign) {
+        if (enemy_call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
         Ship* enemy_ship = shipGroupTable.getShip(enemy_call_sign);
-        if (!enemy_ship) {
-            return;
+        if (!enemy_ship) return MissionError::SHIP_NOT_FOUND;
+        try {
+            // Добавляем проверку состояния корабля
+            double ship_condition = enemy_ship->getDurability() / 100.0;
+            // Рассчитываем стоимость с учётом повреждений
+            double base_cost = enemy_ship->calculateTotalCost();
+            double adjusted_cost = base_cost * ship_condition;
+
+            // Добавляем бонус за спасение корабля определённого типа
+            switch(enemy_ship->getShipType()) {
+                case Ship::shiptype::AIRCRAFTCARRIER:
+                    adjusted_cost *= 1.5; // Бонус за авианосец
+                    break;
+                case Ship::shiptype::AVIATORCRUISER:
+                    adjusted_cost *= 1.3; // Бонус за авиакрейсер
+                    break;
+                default:
+                    break;
+            }
+
+            saved_units_cost += adjusted_cost;
+            shipGroupTable.removeShip(enemy_call_sign);
+            return MissionError::SUCCESS;
         }
-        // Добавляем стоимость спасшегося корабля
-        saved_units_cost += enemy_ship->calculateTotalCost();
-        // Удаляем корабль из таблицы
-        shipGroupTable.removeShip(enemy_call_sign);
+        catch (const std::exception&) {
+            return MissionError::SHIP_NOT_FOUND;
+        }
     }
 
 
-    void Mission::simulateRaid(const ship::airvector& squad) {
-        // Создаем потоки для каждой группы кораблей
-        std::vector<std::thread> threads;
+    MissionError Mission::simulateRaid(const ship::airvector& squad) {
+        if (squad.empty()) return MissionError::VOID_LIST;
+        if (shipGroupTable.empty()) return MissionError::SHIP_NOT_FOUND;
+        try {
+            std::vector<std::thread> threads;
+            auto iter = shipGroupTable.getIterator();
 
-        auto iter = shipGroupTable.getIterator();
-        while (iter.hasNext()) {
-            auto [call_sign, ship] = iter.get();
-
-            // Создаем поток для обработки каждого корабля
-            threads.emplace_back([this, ship, &squad]() {
-                // Обработка в зависимости от типа корабля
-                if (auto carrier = dynamic_cast<AircraftCarrier*>(ship)) {
-                    carrier->interceptorAttack(squad);
-                }
-                else if (auto aviator = dynamic_cast<AviatorCruiser*>(ship)) {
-                    aviator->interceptorAttack(squad);
-                    aviator->fireAtAircraft(squad);
-                }
-                else if (auto cruiser = dynamic_cast<Cruiser*>(ship)) {
-                    cruiser->fireAtAircraft(squad);
-                }
-            });
-
-            iter.next();
+            while (iter.hasNext()) {
+                auto [call_sign, ship] = iter.get();
+                threads.emplace_back([this, ship, &squad]() {
+                    if (auto carrier = dynamic_cast<IAircraftCarrier*>(ship)) {
+                        carrier->interceptorAttack(squad);
+                    }
+                    else if (auto aviator = dynamic_cast<IShip>(ship)) {
+                        aviator->interceptorAttack(squad);
+                        aviator->fireAtAircraft(squad);
+                    }
+                    else if (auto cruiser = dynamic_cast<ICruiser*>(ship)) {
+                        cruiser->fireAtAircraft(squad);
+                    }
+                });
+                iter.next();
+            }
+            for (auto& thread : threads) {
+                thread.join();
+            }
+            return MissionError::SUCCESS;
         }
-
-        // Ожидаем завершения всех потоков
-        for (auto& thread : threads) {
-            thread.join();
+        catch (const std::exception&) {
+            return MissionError::SHIP_NOT_FOUND;
         }
     }
 
@@ -292,7 +308,7 @@ namespace acg {
               damage_per_group(0), necessary_damage(0), total_enemy_cost(0),
               saved_units_cost(0), size_baseA(0), size_baseB(0) {}
 
-// **Методы доступа: геттеры**
+    // **Методы доступа: геттеры**
 
     std::string Mission::getCommander() const {
         return commander;

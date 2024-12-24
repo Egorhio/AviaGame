@@ -144,4 +144,17 @@ namespace acg {
         }
     }
 
+    bool Aircraft::operator==(const Aircraft& other) const {
+        return type == other.type &&
+               damage == other.damage &&
+               active == other.active &&
+               durability == other.durability &&
+               speed == other.speed &&
+               fuel_consumption == other.fuel_consumption &&
+               fuel_capacity == other.fuel_capacity &&
+               refuel_speed == other.refuel_speed &&
+               cost == other.cost &&
+               attack_radius == other.attack_radius;
+    }
+
 } // namespace acg

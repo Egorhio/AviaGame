@@ -3,6 +3,7 @@
 #include "Table.h"
 
 namespace acg {
+
     template<class T>
     ShipTable<T>::HashNode::HashNode(std::string call_sign, T *value)
     : call_sign(std::move(call_sign)), value(value), next(nullptr) {}
@@ -161,6 +162,31 @@ namespace acg {
     template<class T>
     ShipTable<T>::Iterator ShipTable<T>::getIterator() {
         return Iterator(buckets, capacity);
+    }
+
+    template <typename T>
+    void ShipTable<T>::freeBuckets() {
+        for (size_t i = 0; i < capacity; ++i) {
+            HashNode* node = buckets[i];
+            while (node != nullptr) {
+                HashNode* next = node->next;
+                delete node->value;
+                delete node;
+                node = next;
+            }
+            buckets[i] = nullptr;
+        }
+        size = 0;
+    }
+
+    template <typename T>
+    void ShipTable<T>::clear() {
+        freeBuckets();
+    }
+
+    template <typename T>
+    bool ShipTable<T>::empty() const {
+        return size == 0;
     }
 
 } // namespace acg

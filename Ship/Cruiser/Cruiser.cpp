@@ -194,7 +194,7 @@ namespace acg {
         static auto last_move_time = std::chrono::steady_clock::now();
         auto current_time = std::chrono::steady_clock::now();
 
-        // Интервал обновления движения (например, 1 секунда)
+        // Интервал обновления движения (например, 4 секунды)
         const auto move_interval = std::chrono::seconds(4);
 
         if (current_time - last_move_time < move_interval) {
@@ -211,6 +211,25 @@ namespace acg {
         }
 
         last_move_time = current_time;
+    }
+
+    Cruiser::Cruiser(Ship::shiptype type, const std::string& name,
+                     const std::string& captain_rank, const std::string& captain_name,
+                     double speed, int durability, double cost,
+                     int max_arm_capacity, int storage_cap)
+            : Ship(type, name, captain_rank, captain_name, speed, durability, cost),
+              max_armament_capacity(max_arm_capacity),
+              storage_capacity(storage_cap)
+    {
+        if (max_arm_capacity < 0) {
+            throw std::invalid_argument("Max armament capacity cannot be negative");
+        }
+        if (storage_cap < 0) {
+            throw std::invalid_argument("Storage capacity cannot be negative");
+        }
+
+        armament.clear();
+        ammo_storage.clear();
     }
 
 } // namespace acg

@@ -2,7 +2,6 @@
 
 namespace acg {
 
-
     int AviatorCruiser::getMaxAircraftCapacity() const {
         return max_aircraft_capacity;
     }
@@ -14,7 +13,7 @@ namespace acg {
         max_aircraft_capacity = max_cap;
     }
 
-    std::optional<ship::airvector> AviatorCruiser::getAircrafts() {
+    std::optional<ship::airvector> AviatorCruiser::getAircrafts() const {
         return aircrafts;
     }
 
@@ -25,8 +24,6 @@ namespace acg {
             throw std::invalid_argument("Превышена максимальная вместимость авиации");
         }
     }
-
-
 
     void AviatorCruiser::bomberAttack(const ship::coordinate& target_coordinates) {
         static auto last_attack_time = std::chrono::steady_clock::now();
@@ -84,8 +81,6 @@ namespace acg {
             }
         }
     }
-
-
 
 
     void AviatorCruiser::interceptorAttack(const ship::airvector& enemy_aircraft) {
@@ -166,10 +161,6 @@ namespace acg {
         }
         return best_fighter;
     }
-
-
-
-
 
     std::optional<ship::armvector> AviatorCruiser::getArmament() const {
         return armament;

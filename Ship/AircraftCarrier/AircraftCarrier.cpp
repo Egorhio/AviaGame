@@ -8,12 +8,12 @@ namespace acg {
 
     void AircraftCarrier::setMaxAircraftCapacity(int max_cap) {
         if (max_cap < 0) {
-            throw std::invalid_argument("Capacity cannot be negative");
+            throw std::invalid_argument("Максимальное количество самолётов на борту не может быть отрицательным");
         }
         max_aircraft_capacity = max_cap;
     }
 
-    std::optional<ship::airvector> AircraftCarrier::getAircrafts() {
+    std::optional<ship::airvector> AircraftCarrier::getAircrafts() const {
         return aircrafts;
     }
 
@@ -84,7 +84,6 @@ namespace acg {
 
 
 
-
     void AircraftCarrier::interceptorAttack(const ship::airvector& enemy_aircraft) {
         static auto last_intercept_time = std::chrono::steady_clock::now();
         auto current_time = std::chrono::steady_clock::now();
@@ -106,7 +105,7 @@ namespace acg {
 
 // ▎Функция 1: Получение списка готовых истребителей
     airothervector AircraftCarrier::getReadyFighters() {
-        std::vector<Aircraft*> ready_fighters;
+        airothervector ready_fighters;
         // Группируем истребители, которые готовы к атаке
         for (auto& [aircraft, pos] : aircrafts) {
             if (aircraft.getType() == Aircraft::AircraftType::FIGHTER &&
@@ -144,7 +143,7 @@ namespace acg {
     }
 
 // ▎Функция 3: Нахождение лучшего истребителя для атаки
-    Aircraft* AircraftCarrier::findBestFighter(airothervector& ready_fighters, double distance) {
+    Aircraft* AircraftCarrier::findBestFighter(const airothervector& ready_fighters, double distance) {
         Aircraft* best_fighter = nullptr;
         double best_efficiency = 0;
 
