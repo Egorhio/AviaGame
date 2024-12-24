@@ -36,6 +36,12 @@ namespace acg {
          * @param enemy_aircraft Вектор вражеских самолетов и их координат
          */
         virtual void interceptorAttack(const ship::airvector& enemy_aircraft) = 0;
+
+        virtual void modifyAircrafts(const ship::airvector& updated_aircrafts) = 0;
+
+        [[nodiscard]] virtual std::optional<ship::airvector> getAircrafts() const = 0;
+
+        [[nodiscard]] virtual int getMaxAircraftCapacity() const = 0;
     };
 
 } //namespace acg

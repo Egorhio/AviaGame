@@ -153,15 +153,20 @@ namespace acg {
     }
 
     void Ship::move() {
-        static auto last_move_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 2; // Интервал обновления движения в количестве вызовов
 
-        // Интервал обновления движения
-        const auto move_interval = std::chrono::seconds(3);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_move_time < move_interval) {
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         auto destination = getDestinationCoordinates();
         if (!destination.has_value()) return;
@@ -179,8 +184,6 @@ namespace acg {
         } else {
             setCurrentCoordinates(destination.value());
         }
-
-        last_move_time = current_time;
     }
 
     void Ship::setDestination(const ship::coordinate &new_destination) {

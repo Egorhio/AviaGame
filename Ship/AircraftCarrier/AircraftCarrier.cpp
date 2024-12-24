@@ -26,14 +26,20 @@ namespace acg {
     }
 
     void AircraftCarrier::bomberAttack(const ship::coordinate& target_coordinates) {
-        static auto last_attack_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между атаками (5 секунд)
-        const auto min_attack_interval = std::chrono::seconds(5);
-        if (current_time - last_attack_time < min_attack_interval) {
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
+
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         // Существующая логика...
         if (aircrafts.empty()) return;
@@ -51,8 +57,6 @@ namespace acg {
 
         double distance = calculateDistance(target_coordinates, current_pos);
         executeAttackWaves(available_bombers, distance);
-
-        last_attack_time = current_time;
     }
 
     void AircraftCarrier::executeAttackWaves(airothervector& available_bombers, double distance) {
@@ -85,14 +89,20 @@ namespace acg {
 
 
     void AircraftCarrier::interceptorAttack(const ship::airvector& enemy_aircraft) {
-        static auto last_intercept_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 1; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между перехватами (3 секунды)
-        const auto min_intercept_interval = std::chrono::seconds(3);
-        if (current_time - last_intercept_time < min_intercept_interval) {
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
+
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         // Существующая логика...
         if (aircrafts.empty()) return;
@@ -100,7 +110,6 @@ namespace acg {
         if (ready_fighters.empty()) return;
         assignTargetsToFighters(enemy_aircraft, ready_fighters);
 
-        last_intercept_time = current_time;
     }
 
 // ▎Функция 1: Получение списка готовых истребителей
@@ -178,15 +187,20 @@ namespace acg {
     }
 
     void AircraftCarrier::setDestination(const ship::coordinate& new_destination) {
-        static auto last_destination_change = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между сменой курса (7 секунд для авианосца)
-        const auto min_course_change_interval = std::chrono::seconds(7);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_destination_change < min_course_change_interval) {
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         double distance = calculateDistance(new_destination, getCurrentCoordinates());
         if (distance > getSpeed() * 8) {
@@ -202,19 +216,23 @@ namespace acg {
             setDestinationCoordinates(new_destination);
         }
 
-        last_destination_change = current_time;
     }
 
     void AircraftCarrier::move() {
-        static auto last_move_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 1; // Интервал обновления движения в количестве вызовов
 
-        // Интервал обновления движения (2 секунды для авианосца)
-        const auto move_interval = std::chrono::seconds(2);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_move_time < move_interval) {
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         auto destination = getDestinationCoordinates();
         if (!destination.has_value()) return;
@@ -232,8 +250,6 @@ namespace acg {
         } else {
             setCurrentCoordinates(destination.value());
         }
-
-        last_move_time = current_time;
     }
 
 } //namespace acg

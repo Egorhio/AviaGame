@@ -34,22 +34,25 @@ namespace acg {
     MissionError Mission::buyPlaneForShip(const std::string& call_sign, Aircraft* plane) {
         if (call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
         if (!plane) return MissionError::AIRCRAFT_NOT_FOUND;
-        Ship* ship = shipGroupTable.getShip(call_sign);
+        Ship *ship = shipGroupTable.getShip(call_sign);
         if (!ship) return MissionError::SHIP_NOT_FOUND;
         if (!checkBudget(plane->getCost())) return MissionError::INSUFFICIENT_FUNDS;
-        // Приведение типов и проверка возможности размещения авиации
-        auto* aircarrier = dynamic_cast<IAircraftCarrier*>(ship);
-        auto* aviator = dynamic_cast<IAviatorCruiser*>(ship);
-        if (!aircarrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
-        // Получение текущего списка самолётов
+        Ship::shiptype ship_type = ship->getShipType();
+        if (ship_type != Ship::shiptype::AIRCRAFTCARRIER && ship_type != Ship::shiptype::AVIATORCRUISER)
+            return MissionError::INVALID_SHIP_TYPE;
+        auto* aircarrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                dynamic_cast<IAircraftCarrier*>(ship) : nullptr;
+        auto* aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                dynamic_cast<IAviatorCruiser*>(ship) : nullptr;
         ship::airvector current_aircraft;
-        if (!getAircraftList(aircarrier, aviator, current_aircraft)) return MissionError::STORAGE_FULL;
+        if (!getAircraftList(aircarrier, aviator, current_aircraft))
+            return MissionError::VOID_LIST;
         // Добавление самолёта и обновление списка
         current_aircraft.push_back({*plane, {0, 0}});
         try {
             if (aircarrier) {
                 aircarrier->modifyAircrafts(current_aircraft);
-            } else {
+            } else if (aviator) {
                 aviator->modifyAircrafts(current_aircraft);
             }
         } catch (const std::invalid_argument&) {
@@ -63,11 +66,15 @@ namespace acg {
     MissionError Mission::sellPlaneFromShip(const std::string& call_sign, Aircraft* plane) {
         if (call_sign.empty()) return MissionError::EMPTY_CALLSIGN;
         if (!plane) return MissionError::AIRCRAFT_NOT_FOUND;
-        Ship* ship = shipGroupTable.getShip(call_sign);
+        Ship *ship = shipGroupTable.getShip(call_sign);
         if (!ship) return MissionError::SHIP_NOT_FOUND;
-        auto* aircarrier = dynamic_cast<AircraftCarrier*>(ship);
-        auto* aviator = dynamic_cast<AviatorCruiser*>(ship);
-        if (!aircarrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
+        Ship::shiptype ship_type = ship->getShipType();
+        if (ship_type != Ship::shiptype::AIRCRAFTCARRIER && ship_type != Ship::shiptype::AVIATORCRUISER)
+            return MissionError::INVALID_SHIP_TYPE;
+        auto *aircarrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                           dynamic_cast<IAircraftCarrier *>(ship) : nullptr;
+        auto *aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                        dynamic_cast<IAviatorCruiser *>(ship) : nullptr;
         ship::airvector current_aircraft;
         if (!getAircraftList(aircarrier, aviator, current_aircraft)) return MissionError::VOID_LIST;
         // Поиск и удаление самолета
@@ -78,11 +85,11 @@ namespace acg {
                 try {
                     if (aircarrier) {
                         aircarrier->modifyAircrafts(current_aircraft);
-                    } else {
+                    } else if (aviator){
                         aviator->modifyAircrafts(current_aircraft);
                     }
                     return MissionError::SUCCESS;
-                } catch (const std::invalid_argument&) {
+                } catch (const std::invalid_argument &) {
                     return MissionError::STORAGE_FULL;
                 }
             }
@@ -91,8 +98,8 @@ namespace acg {
     }
 
     // Получение списка самолетов с корабля
-    bool Mission::getAircraftList(AircraftCarrier* aircarrier,
-                                  AviatorCruiser* aviator,
+    bool Mission::getAircraftList(IAircraftCarrier* aircarrier,
+                                  IAviatorCruiser* aviator,
                                   ship::airvector& current_aircraft) {
         if (aircarrier) {
             if (!aircarrier->getAircrafts().has_value()) return false;
@@ -104,8 +111,8 @@ namespace acg {
         return true;
     }
 
-    bool Mission::getArmamentList(Cruiser* cruiser,
-                                  AviatorCruiser* aviator,
+    bool Mission::getArmamentList(ICruiser* cruiser,
+                                  IAviatorCruiser* aviator,
                                   ship::armvector& current_aircraft) {
         if (cruiser) {
             if (!cruiser->getArmament().has_value()) return false;
@@ -125,10 +132,21 @@ namespace acg {
         Ship* toShip = shipGroupTable.getShip(to_ship);
         if (!fromShip || !toShip) return MissionError::SHIP_NOT_FOUND;
         // Проверяем типы кораблей
-        auto* fromCarrier = dynamic_cast<AircraftCarrier*>(fromShip);
-        auto* fromAviator = dynamic_cast<AviatorCruiser*>(fromShip);
-        auto* toCarrier = dynamic_cast<AircraftCarrier*>(toShip);
-        auto* toAviator = dynamic_cast<AviatorCruiser*>(toShip);
+        Ship::shiptype from_ship_type = fromShip->getShipType();
+        Ship::shiptype to_ship_type = toShip->getShipType();
+        if ((from_ship_type != Ship::shiptype::AIRCRAFTCARRIER &&
+                from_ship_type != Ship::shiptype::AVIATORCRUISER) ||
+                (to_ship_type != Ship::shiptype::AIRCRAFTCARRIER &&
+                to_ship_type != Ship::shiptype::AVIATORCRUISER))
+            return MissionError::INVALID_SHIP_TYPE;
+        auto* fromCarrier = from_ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                            dynamic_cast<IAircraftCarrier *>(fromShip) : nullptr;
+        auto* fromAviator = from_ship_type == Ship::shiptype::AVIATORCRUISER ?
+                            dynamic_cast<IAviatorCruiser *>(fromShip) : nullptr;
+        auto* toCarrier = to_ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                          dynamic_cast<IAircraftCarrier *>(toShip) : nullptr;
+        auto* toAviator = to_ship_type == Ship::shiptype::AVIATORCRUISER ?
+                          dynamic_cast<IAviatorCruiser *>(toShip) : nullptr;
 
         if ((!fromCarrier && !fromAviator) || (!toCarrier && !toAviator))
             return MissionError::INVALID_SHIP_TYPE;
@@ -181,8 +199,13 @@ namespace acg {
         if (!ship) return MissionError::SHIP_NOT_FOUND;
         if (!checkBudget(weapon->getCost()))
             return MissionError::INSUFFICIENT_FUNDS;
-        auto* cruiser = dynamic_cast<Cruiser*>(ship);
-        auto* aviator = dynamic_cast<AviatorCruiser*>(ship);
+        Ship::shiptype ship_type = ship->getShipType();
+        if (ship_type != Ship::shiptype::CRUISER && ship_type != Ship::shiptype::AVIATORCRUISER)
+            return MissionError::INVALID_SHIP_TYPE;
+        auto *cruiser = ship_type == Ship::shiptype::CRUISER ?
+                        dynamic_cast<ICruiser *>(ship) : nullptr;
+        auto *aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                        dynamic_cast<IAviatorCruiser *>(ship) : nullptr;
         if (!cruiser && !aviator) return MissionError::INVALID_SHIP_TYPE;
         ship::armvector current_armament;
         if (!getArmamentList(cruiser, aviator, current_armament))
@@ -207,21 +230,25 @@ namespace acg {
         if (!weapon) return MissionError::WEAPON_NOT_FOUND;
         Ship* ship = shipGroupTable.getShip(ship_call_sign);
         if (!ship) return MissionError::SHIP_NOT_FOUND;
-        auto* cruiser = dynamic_cast<Cruiser*>(ship);
-        auto* aviator = dynamic_cast<AviatorCruiser*>(ship);
-        if (!cruiser && !aviator) return MissionError::INVALID_SHIP_TYPE;
+        Ship::shiptype ship_type = ship->getShipType();
+        if (ship_type != Ship::shiptype::CRUISER && ship_type != Ship::shiptype::AVIATORCRUISER)
+            return MissionError::INVALID_SHIP_TYPE;
+        auto *cruiser = ship_type == Ship::shiptype::CRUISER ?
+                           dynamic_cast<ICruiser *>(ship) : nullptr;
+        auto *aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                        dynamic_cast<IAviatorCruiser *>(ship) : nullptr;
         ship::armvector current_armament;
         if (!getArmamentList(cruiser, aviator, current_armament))
             return MissionError::VOID_LIST;
         // Ищем и удаляем оружие
         for (auto it = current_armament.begin(); it != current_armament.end(); ++it) {
-            if (&(*it) == weapon) {
+            if (*it == *weapon) {
                 spent_sum -= weapon->getCost() * 0.7; // Возврат 70% стоимости
                 current_armament.erase(it);
                 try {
                     if (cruiser) {
                         cruiser->modifyArmament(current_armament);
-                    } else {
+                    } else if (aviator) {
                         aviator->modifyArmament(current_armament);
                     }
                     return MissionError::SUCCESS;
@@ -269,26 +296,36 @@ namespace acg {
     MissionError Mission::simulateRaid(const ship::airvector& squad) {
         if (squad.empty()) return MissionError::VOID_LIST;
         if (shipGroupTable.empty()) return MissionError::SHIP_NOT_FOUND;
+
         try {
             std::vector<std::thread> threads;
             auto iter = shipGroupTable.getIterator();
 
             while (iter.hasNext()) {
                 auto [call_sign, ship] = iter.get();
-                threads.emplace_back([this, ship, &squad]() {
-                    if (auto carrier = dynamic_cast<IAircraftCarrier*>(ship)) {
-                        carrier->interceptorAttack(squad);
+                threads.emplace_back([ship, &squad]() {
+                    Ship::shiptype ship_type = ship->getShipType();
+                    auto *cruiser = ship_type == Ship::shiptype::CRUISER ?
+                                    dynamic_cast<ICruiser *>(ship) : nullptr;
+                    auto *aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                                    dynamic_cast<IAviatorCruiser *>(ship) : nullptr;
+                    auto *aircarrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                                       dynamic_cast<IAircraftCarrier *>(ship) : nullptr;
+
+                    if (aircarrier) {
+                        aircarrier->interceptorAttack(squad);
                     }
-                    else if (auto aviator = dynamic_cast<IShip>(ship)) {
+                    else if (aviator) {
                         aviator->interceptorAttack(squad);
                         aviator->fireAtAircraft(squad);
                     }
-                    else if (auto cruiser = dynamic_cast<ICruiser*>(ship)) {
+                    else if (cruiser) {
                         cruiser->fireAtAircraft(squad);
                     }
                 });
                 iter.next();
             }
+
             for (auto& thread : threads) {
                 thread.join();
             }
@@ -298,8 +335,6 @@ namespace acg {
             return MissionError::SHIP_NOT_FOUND;
         }
     }
-
-
 
     // * Конструкторы
 

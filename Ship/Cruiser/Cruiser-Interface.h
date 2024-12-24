@@ -39,6 +39,10 @@ namespace acg {
          * @param enemy_aircraft Вектор с информацией о вражеских самолетах
          */
         virtual void fireAtAircraft(const ship::airvector& enemy_aircraft) = 0;
+
+        [[nodiscard]] virtual std::optional<ship::armvector> getArmament() const = 0;
+
+        virtual void modifyArmament(const ship::armvector& new_armament) = 0;
     };
 
 } // namespace acg

@@ -26,14 +26,14 @@ namespace acg {
          * @brief Получить текущее вооружение крейсера
          * @return std::optional с вектором вооружения
          */
-        [[nodiscard]] std::optional<ship::armvector> getArmament() const;
+        [[nodiscard]] std::optional<ship::armvector> getArmament() const override;
 
         /**
          * @brief Изменить вооружение крейсера
          * @param new_armament Новый вектор вооружения
          * @throw std::invalid_argument если превышена максимальная вместимость
          */
-        void modifyArmament(const ship::armvector& new_armament);
+        void modifyArmament(const ship::armvector& new_armament) override;
 
         /**
          * @brief Получить информацию о конкретных боеприпасах

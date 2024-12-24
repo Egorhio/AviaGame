@@ -42,7 +42,7 @@ namespace acg {
          * @brief Получить максимальную вместимость самолетов
          * @return Максимальное количество самолетов
          */
-        [[nodiscard]] int getMaxAircraftCapacity() const;
+        [[nodiscard]] int getMaxAircraftCapacity() const override;
 
         /**
          * @brief Установить максимальную вместимость самолетов
@@ -55,14 +55,14 @@ namespace acg {
          * @brief Получить информацию о самолетах на борту
          * @return Опциональный вектор самолетов
          */
-        [[nodiscard]] std::optional<ship::airvector> getAircrafts() const;
+        [[nodiscard]] std::optional<ship::airvector> getAircrafts() const override;
 
         /**
          * @brief Обновить список самолетов
          * @param updated_aircrafts Новый список самолетов
          * @throw std::invalid_argument если превышена максимальная вместимость
          */
-        void modifyAircrafts(const ship::airvector& updated_aircrafts);
+        void modifyAircrafts(const ship::airvector& updated_aircrafts) override;
 
         /**
          * @brief Выполнить атаку бомбардировщиками

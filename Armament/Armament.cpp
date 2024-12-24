@@ -1,6 +1,22 @@
 #include "Armament.h"
 
+#include <utility>
+
 namespace acg {
+
+    Armament::Armament(std::string name, Armament::ArmamentType type, int damage, double range_of_fire,
+                       double rate_of_fire, int max_ammo_capacity, double reload_speed, double cost)
+            : name(std::move(name)),
+              type(type),
+              ammo_name("Standard"),
+              active(false),
+              damage(damage),
+              range_of_fire(range_of_fire),
+              rate_of_fire(rate_of_fire),
+              max_ammo_capacity(max_ammo_capacity),
+              current_ammo(max_ammo_capacity),
+              reload_speed(reload_speed),
+              cost(cost) {}
 
     std::string Armament::getName() const {
         return name;
@@ -127,19 +143,20 @@ namespace acg {
         if (!active || current_ammo <= 0) {
             return;
         }
-
-        // Используем статическую переменную, но инициализируем ее только один раз
+        // Используем статические переменные
         static bool first_shoot = true;
-        static auto last_shot_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
-        auto time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(
-                current_time - last_shot_time).count();
+        static int shoot_count = 0;
 
-        if (time_diff >= (1.0 / rate_of_fire) || first_shoot) {
+        // Рассчитываем количество выстрелов, которое можно сделать в секунду
+        int max_shoots_per_second = static_cast<int>(rate_of_fire);
+
+        if (first_shoot || shoot_count >= max_shoots_per_second) {
             current_ammo--;
-            last_shot_time = current_time;
+            shoot_count = 0;  // Сбрасываем счетчик после выстрела
+            first_shoot = false;
+        } else {
+            shoot_count++;
         }
-        first_shoot = false;
     }
 
     void Armament::reload() {
@@ -147,17 +164,37 @@ namespace acg {
             return;
         }
         static bool is_reloading = false;
-        static auto reload_start_time = std::chrono::steady_clock::now();
+        static int reload_count = 0;
+
+        // Рассчитываем количество секунд, необходимых для полной перезарядки
+        int reload_time = static_cast<int>(reload_speed);
+
         if (!is_reloading) {
-            reload_start_time = std::chrono::steady_clock::now();
             is_reloading = true;
+            reload_count = 0;  // Сбрасываем счетчик перезарядки
             return;
         }
-        auto current_time = std::chrono::steady_clock::now();
-        auto reload_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - reload_start_time).count();
-        if (reload_time >= static_cast<int64_t>(reload_speed)) {
+
+        if (reload_count >= reload_time) {
             current_ammo = max_ammo_capacity;
             is_reloading = false;
+        } else {
+            reload_count++;
         }
     }
+
+    bool Armament::operator==(const Armament& other) const {
+        return name == other.name &&
+               type == other.type &&
+               ammo_name == other.ammo_name &&
+               active == other.active &&
+               damage == other.damage &&
+               range_of_fire == other.range_of_fire &&
+               rate_of_fire == other.rate_of_fire &&
+               max_ammo_capacity == other.max_ammo_capacity &&
+               current_ammo == other.current_ammo &&
+               reload_speed == other.reload_speed &&
+               cost == other.cost;
+    }
+
 } // namespace acg

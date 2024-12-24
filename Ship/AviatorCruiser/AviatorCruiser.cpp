@@ -26,14 +26,20 @@ namespace acg {
     }
 
     void AviatorCruiser::bomberAttack(const ship::coordinate& target_coordinates) {
-        static auto last_attack_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 8; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между атаками (5 секунд)
-        const auto min_attack_interval = std::chrono::seconds(5);
-        if (current_time - last_attack_time < min_attack_interval) {
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
+
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         // Существующая логика...
         if (aircrafts.empty()) return;
@@ -52,7 +58,6 @@ namespace acg {
         double distance = calculateDistance(target_coordinates, current_pos);
         executeAttackWaves(available_bombers, distance);
 
-        last_attack_time = current_time;
     }
 
     void AviatorCruiser::executeAttackWaves(airothervector& available_bombers, double distance) {
@@ -84,14 +89,20 @@ namespace acg {
 
 
     void AviatorCruiser::interceptorAttack(const ship::airvector& enemy_aircraft) {
-        static auto last_intercept_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 3; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между перехватами (3 секунды)
-        const auto min_intercept_interval = std::chrono::seconds(3);
-        if (current_time - last_intercept_time < min_intercept_interval) {
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
+
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         // Существующая логика...
         if (aircrafts.empty()) return;
@@ -99,7 +110,7 @@ namespace acg {
         if (ready_fighters.empty()) return;
         assignTargetsToFighters(enemy_aircraft, ready_fighters);
 
-        last_intercept_time = current_time;
+
     }
 
 // ▎Функция 1: Получение списка готовых истребителей
@@ -231,15 +242,20 @@ namespace acg {
     }
 
     void AviatorCruiser::fireAtShip(const ship::coordinate &target_coordinates) {
-        static auto last_fire_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между залпами (например, 2 секунды)
-        const auto min_fire_interval = std::chrono::seconds(2);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_fire_time < min_fire_interval) {
-            return; // Слишком рано для следующего залпа
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
+            return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         for (auto& weapon : armament) {
             if (weapon.getActive() && weapon.getType() == Armament::ArmamentType::LIGHT) {
@@ -250,30 +266,29 @@ namespace acg {
                 }
             }
         }
-        last_fire_time = current_time;
+
     }
 
     void AviatorCruiser::reloadWeapon(const Armament &weapon) {
         if (weapon.getType() == Armament::ArmamentType::HEAVY) {
             return; // Только легкие орудия могут быть перезаряжены
         }
-        static auto reload_start_time = std::chrono::steady_clock::now();
+
+        static int reload_timer = 0;
         static bool is_reloading = false;
 
-        auto current_time = std::chrono::steady_clock::now();
-        auto reload_duration = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>
-                (current_time - reload_start_time).count());
-
         if (!is_reloading) {
-            reload_start_time = current_time;
+            reload_timer = 0;
             is_reloading = true;
         }
 
         auto ammo_info = getAmmoInfo(weapon.getAmmoName());
         if (!ammo_info) return;
 
+        reload_timer++;
+
         // Если прошло достаточно времени для перезарядки
-        if (reload_duration >= weapon.getReloadSpeed()) {
+        if (reload_timer >= weapon.getReloadSpeed()) {
             int needed_ammo = weapon.getMaxAmmoCapacity() - weapon.getCurrentAmmo();
             if (needed_ammo <= 0) return;
 
@@ -285,17 +300,25 @@ namespace acg {
                 ammo_storage[weapon.getAmmoName()].quantity -= available_ammo;
             }
             is_reloading = false;
+            reload_timer = 0;
         }
     }
 
     void AviatorCruiser::fireAtAircraft(const ship::airvector &enemy_aircraft) {
-        static auto last_aa_fire_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
-        // Минимальный интервал между залпами ПВО (например, 1 секунда)
-        const auto min_aa_fire_interval = std::chrono::seconds(1);
-        if (current_time - last_aa_fire_time < min_aa_fire_interval) {
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
+
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
+
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         for (auto &weapon: armament) {
             if (weapon.getActive() && weapon.getType() == Armament::ArmamentType::LIGHT) {
@@ -309,7 +332,7 @@ namespace acg {
                 }
             }
         }
-        last_aa_fire_time = current_time;
+
     }
 
     void AviatorCruiser::move() {
@@ -338,15 +361,20 @@ namespace acg {
     }
 
     void AviatorCruiser::setDestination(const ship::coordinate &new_destination) {
-        static auto last_destination_change = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 7; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между сменой курса (например, 8 секунд)
-        const auto min_course_change_interval = std::chrono::seconds(8);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_destination_change < min_course_change_interval) {
-            return; // Слишком рано для смены курса
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
+            return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         double distance = calculateDistance(new_destination, current_coordinates);
         if (distance > speed * 20) {
@@ -359,7 +387,6 @@ namespace acg {
             destination_coordinates = new_destination;
         }
 
-        last_destination_change = current_time;
     }
 
 }

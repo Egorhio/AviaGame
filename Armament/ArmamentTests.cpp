@@ -54,7 +54,6 @@ TEST_F(ArmamentTest, ShootingMechanism) {
     armament->setMaxAmmoCapacity(10);
     armament->setCurrentAmmo(10);
     armament->setRateOfFire(1.0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Задержка в 100 миллисекунд
     armament->shoot();
     EXPECT_EQ(armament->getCurrentAmmo(), 9);
     // Тест скорострельности
@@ -67,10 +66,10 @@ TEST_F(ArmamentTest, ReloadingMechanism) {
     armament->setActive(true);
     armament->setMaxAmmoCapacity(10);
     armament->setCurrentAmmo(5);
-    armament->setReloadSpeed(2.0);
+    armament->setReloadSpeed(1.0);
 
     armament->reload();
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    armament->reload();
     armament->reload();
     EXPECT_EQ(armament->getCurrentAmmo(), 10);
 }

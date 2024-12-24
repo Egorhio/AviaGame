@@ -1,5 +1,4 @@
 #pragma once
-
 #include <stdexcept>
 /**
  * @namespace acg
@@ -120,14 +119,42 @@ namespace acg {
             HashNode* currentNode;  ///< Текущий узел
 
         public:
-            // Добавляем конструктор по умолчанию
+            /**
+             * @brief Конструктор по умолчанию для итератора
+             * Инициализирует итератор с нулевыми значениями
+             */
             Iterator() : buckets(nullptr), capacity(0), currentIndex(0), currentNode(nullptr) {}
 
+            /**
+             * @brief Определяет категорию итератора как forward_iterator
+             * Позволяет использовать итератор в стандартных алгоритмах STL
+             */
             using iterator_category = std::forward_iterator_tag;
+
+            /**
+             * @brief Определяет тип значения, возвращаемого итератором
+             * Пара из строки (позывной) и указателя на корабль
+             */
             using value_type = std::pair<std::string, T*>;
+
+            /**
+             * @brief Определяет тип для разницы между итераторами
+             * Стандартный тип для представления разницы между указателями
+             */
             using difference_type = std::ptrdiff_t;
+
+            /**
+             * @brief Определяет тип указателя на значение
+             * Указатель на пару строка-корабль
+             */
             using pointer = value_type*;
+
+            /**
+             * @brief Определяет тип ссылки на значение
+             * Ссылка на пару строка-корабль
+             */
             using reference = value_type&;
+
             /**
              * @brief Конструктор итератора
              * @param buckets Указатель на массив корзин
@@ -152,29 +179,38 @@ namespace acg {
              */
             std::pair<std::string, T*> get() const;
 
-            // В Table.inl добавьте эти операторы в ваш класс Iterator
-            Iterator& operator++() {
-                next();
-                return *this;
-            }
+            /**
+             * @brief Префиксный инкремент итератора
+             * @return Ссылка на обновленный итератор
+             */
+            Iterator& operator++();
 
-            Iterator operator++(int) {
-                Iterator tmp = *this;
-                next();
-                return tmp;
-            }
+            /**
+             * @brief Постфиксный инкремент итератора
+             * @param Фиктивный параметр для различения постфиксной версии
+             * @return Копия итератора до инкремента
+             */
+            Iterator operator++(int);
 
-            bool operator==(const Iterator& other) const {
-                return currentNode == other.currentNode;
-            }
+            /**
+             * @brief Оператор сравнения итераторов на равенство
+             * @param other Другой итератор для сравнения
+             * @return true если итераторы указывают на один элемент
+             */
+            bool operator==(const Iterator& other) const;
 
-            bool operator !=(const Iterator& other) const {
-                return *this != other;
-            }
+            /**
+             * @brief Оператор сравнения итераторов на неравенство
+             * @param other Другой итератор для сравнения
+             * @return true если итераторы указывают на разные элементы
+             */
+            bool operator!=(const Iterator& other) const;
 
-            value_type operator*() const {
-                return get();
-            }
+            /**
+             * @brief Оператор разыменования итератора
+             * @return Значение текущего элемента
+             */
+            value_type operator*() const;
 
         private:
             /**

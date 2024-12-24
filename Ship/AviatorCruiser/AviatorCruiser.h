@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "../AircraftCarrier/AircraftCarrier-Interface.h"
-#include "../Cruiser/Cruiser-Interface.h"
+#include "AviatorCruiser-Interface.h"
 
 namespace acg {
 
@@ -22,7 +21,7 @@ namespace acg {
      * @brief Класс гибридного корабля, сочетающего функции крейсера и авианосца.
      * @details Этот класс наследует функциональность от Ship, IAircraftCarrier и ICruiser, объединяя их возможности.
      */
-    class AviatorCruiser : public Ship, public IAircraftCarrier, public ICruiser {
+    class AviatorCruiser : public Ship, public IAviatorCruiser {
     private:
         ship::armvector armament{0};       ///< Вектор вооружения корабля.
         int max_armament_capacity = 0;     ///< Максимальная вместимость вооружения.
@@ -61,14 +60,14 @@ namespace acg {
          * @brief Получить текущее вооружение.
          * @return std::optional с вектором вооружения.
          */
-        [[nodiscard]] std::optional<ship::armvector> getArmament() const;
+        [[nodiscard]] std::optional<ship::armvector> getArmament() const override;
 
         /**
          * @brief Модифицировать вооружение корабля.
          * @param new_armament Новый вектор вооружения.
          * @throws std::invalid_argument если новое вооружение превышает максимальную вместимость.
          */
-        void modifyArmament(const ship::armvector& new_armament);
+        void modifyArmament(const ship::armvector& new_armament) override;
 
         /**
          * @brief Получить информацию о боеприпасах по названию.
@@ -145,7 +144,7 @@ namespace acg {
          * @brief Получить максимальную вместимость самолётов.
          * @return Максимальная вместимость самолётов.
          */
-        [[nodiscard]] int getMaxAircraftCapacity() const;
+        [[nodiscard]] int getMaxAircraftCapacity() const override;
 
         /**
          * @brief Установить максимальную вместимость самолётов.
@@ -158,14 +157,14 @@ namespace acg {
          * @brief Получить информацию о самолётах.
          * @return std::optional с вектором самолётов.
          */
-        [[nodiscard]] std::optional<ship::airvector> getAircrafts() const;
+        [[nodiscard]] std::optional<ship::airvector> getAircrafts() const override;
 
         /**
          * @brief Модифицировать информацию о самолётах.
          * @param updated_aircrafts Новый вектор самолётов.
          * @throws std::invalid_argument если новое количество самолётов превышает максимальную вместимость.
          */
-        void modifyAircrafts(const ship::airvector& updated_aircrafts);
+        void modifyAircrafts(const ship::airvector& updated_aircrafts) override;
 
         /**
          * @brief Выполнить атаку бомбардировщиками.

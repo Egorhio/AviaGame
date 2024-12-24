@@ -1,17 +1,16 @@
 #pragma once
 
-#include <chrono>
 #include <string>
-#include <iostream>
+#include <stdexcept>
 
 namespace acg {
 
-/**
- * @brief Класс, представляющий вооружение корабля.
- *
- * Класс Armament инкапсулирует основные характеристики и поведение
- * вооружения, включая тип, урон, дальность, скорострельность и другие параметры.
- */
+    /**
+     * @brief Класс, представляющий вооружение корабля.
+     *
+     * Класс Armament инкапсулирует основные характеристики и поведение
+     * вооружения, включая тип, урон, дальность, скорострельность и другие параметры.
+     */
     class Armament {
     public:
         /**
@@ -36,6 +35,14 @@ namespace acg {
         double cost = 0.0;                    ///< Стоимость оружия
 
     public:
+
+        /**
+         * @brief Конструктор с параметрами.
+         *
+         * Создает объект Armament с заданными параметрами.
+         */
+        Armament(std::string  name, ArmamentType type, int damage, double range_of_fire,
+                 double rate_of_fire, int max_ammo_capacity, double reload_speed, double cost);
         /**
          * @brief Конструктор по умолчанию.
          */
@@ -186,6 +193,17 @@ namespace acg {
          * Восполняет боезапас до максимального значения.
          */
         void reload();
+
+        /**
+         * @brief Оператор сравнения равенства для объектов Armament.
+         *
+         * Сравнивает текущий объект Armament с другим объектом на равенство.
+         * Два объекта считаются равными, если все их значимые поля совпадают.
+         *
+         * @param other Объект Armament, с которым происходит сравнение.
+         * @return true, если объекты равны, иначе false.
+         */
+        bool operator==(const Armament& other) const;
     };
 
 } // namespace acg

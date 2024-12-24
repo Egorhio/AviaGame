@@ -1,3 +1,6 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "Simplify"
+
 // ShipTable inline
 
 #include "Table.h"
@@ -189,4 +192,34 @@ namespace acg {
         return size == 0;
     }
 
+    template<class T>
+    typename ShipTable<T>::Iterator& ShipTable<T>::Iterator::operator++() {
+        next();
+        return *this;
+    }
+
+    template<class T>
+    typename ShipTable<T>::Iterator ShipTable<T>::Iterator::operator++(int) {
+        Iterator tmp = *this;
+        next();
+        return tmp;
+    }
+
+    template<class T>
+    bool ShipTable<T>::Iterator::operator==(const Iterator& other) const {
+        return currentNode == other.currentNode;
+    }
+
+    template<class T>
+    bool ShipTable<T>::Iterator::operator!=(const Iterator& other) const {
+        return !(*this == other);
+    }
+
+    template<class T>
+    typename ShipTable<T>::Iterator::value_type ShipTable<T>::Iterator::operator*() const {
+        return get();
+    }
+
 } // namespace acg
+
+#pragma clang diagnostic pop

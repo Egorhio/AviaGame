@@ -27,7 +27,8 @@ set(SOURCES
         Ship/Cruiser/Cruiser-Interface.h
 )
 
-add_executable(3 ${SOURCES} main.cpp)
+add_executable(3 ${SOURCES} main.cpp
+        Ship/AviatorCruiser/AviatorCruiser-Interface.h)
 
 add_executable(project
         ${SOURCES}

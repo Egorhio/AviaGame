@@ -66,15 +66,20 @@ namespace acg {
     }
 
     void Cruiser::fireAtShip(const ship::coordinate &target_coordinates) {
-        static auto last_fire_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 1; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между залпами (например, 2 секунды)
-        const auto min_fire_interval = std::chrono::seconds(2);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_fire_time < min_fire_interval) {
-            return; // Слишком рано для следующего залпа
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
+            return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         for (auto& weapon : armament) {
             if (weapon.getActive()) {
@@ -85,29 +90,32 @@ namespace acg {
                 }
             }
         }
-        last_fire_time = current_time;
+
     }
 
     void Cruiser::reloadWeapon(const Armament &weapon) {
-        static auto reload_start_time = std::chrono::steady_clock::now();
+        static int reload_call_count = 0;
         static bool is_reloading = false;
+        const int reload_interval_calls = static_cast<int>(weapon.getReloadSpeed());
 
-        auto current_time = std::chrono::steady_clock::now();
-        auto reload_duration = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>
-                (current_time - reload_start_time).count());
 
         if (!is_reloading) {
-            reload_start_time = current_time;
+            reload_call_count = 0;
             is_reloading = true;
         }
 
         auto ammo_info = getAmmoInfo(weapon.getAmmoName());
-        if (!ammo_info) return;
-
-        // Если прошло достаточно времени для перезарядки
-        if (reload_duration >= weapon.getReloadSpeed()) {
+        if (!ammo_info) {
+            return;
+        }
+        // Увеличиваем счетчик вызовов
+        reload_call_count++;
+        // Проверяем, прошло ли достаточно "времени" для перезарядки
+        if (reload_call_count >= reload_interval_calls) {
             int needed_ammo = weapon.getMaxAmmoCapacity() - weapon.getCurrentAmmo();
-            if (needed_ammo <= 0) return;
+            if (needed_ammo <= 0) {
+                return;
+            }
 
             int available_ammo = std::min(needed_ammo, ammo_info->quantity);
             if (available_ammo > 0) {
@@ -121,13 +129,20 @@ namespace acg {
     }
 
     void Cruiser::fireAtAircraft(const ship::airvector &enemy_aircraft) {
-        static auto last_aa_fire_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
-        // Минимальный интервал между залпами ПВО (например, 1 секунда)
-        const auto min_aa_fire_interval = std::chrono::seconds(1);
-        if (current_time - last_aa_fire_time < min_aa_fire_interval) {
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 2; // Интервал обновления движения в количестве вызовов
+
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
+
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
             return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         for (auto &weapon: armament) {
             if (weapon.getActive()) {
@@ -141,7 +156,7 @@ namespace acg {
                 }
             }
         }
-        last_aa_fire_time = current_time;
+
     }
 
 
@@ -166,15 +181,20 @@ namespace acg {
 
 // Установить новую точку назначения для крейсера
     void Cruiser::setDestination(const ship::coordinate &new_destination) {
-        static auto last_destination_change = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 5; // Интервал обновления движения в количестве вызовов
 
-        // Минимальный интервал между сменой курса (например, 5 секунд)
-        const auto min_course_change_interval = std::chrono::seconds(5);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_destination_change < min_course_change_interval) {
-            return; // Слишком рано для смены курса
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
+            return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         double distance = calculateDistance(new_destination, current_coordinates);
         if (distance > speed * 10) {
@@ -187,19 +207,23 @@ namespace acg {
             destination_coordinates = new_destination;
         }
 
-        last_destination_change = current_time;
     }
 
     void Cruiser::move() {
-        static auto last_move_time = std::chrono::steady_clock::now();
-        auto current_time = std::chrono::steady_clock::now();
+        // Используем статическую переменную для отслеживания количества вызовов
+        static int move_call_count = 0;
+        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
 
-        // Интервал обновления движения (например, 4 секунды)
-        const auto move_interval = std::chrono::seconds(4);
+        // Увеличиваем счетчик вызовов
+        move_call_count++;
 
-        if (current_time - last_move_time < move_interval) {
-            return; // Слишком рано для следующего перемещения
+        // Если количество вызовов меньше интервала, выходим
+        if (move_call_count < move_interval_calls) {
+            return;
         }
+
+        // Сбрасываем счетчик после достижения интервала
+        move_call_count = 0;
 
         double distance = calculateDistance(destination_coordinates, current_coordinates);
         if (distance > speed) {
@@ -209,8 +233,6 @@ namespace acg {
         } else {
             current_coordinates = destination_coordinates;
         }
-
-        last_move_time = current_time;
     }
 
     Cruiser::Cruiser(Ship::shiptype type, const std::string& name,

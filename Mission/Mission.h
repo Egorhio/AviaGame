@@ -5,7 +5,6 @@
 #include "AircraftCarrier/AircraftCarrier.h"
 #include "AviatorCruiser/AviatorCruiser.h"
 #include <thread>
-#include <iostream>
 
 namespace acg {
 
@@ -312,7 +311,7 @@ namespace acg {
          * @param current_aircraft Текущий вектор самолетов
          * @return true, если список получен успешно
          */
-        static bool getAircraftList(AircraftCarrier *aircarrier, AviatorCruiser *aviator, ship::airvector &current_aircraft);
+        static bool getAircraftList(IAircraftCarrier *aircarrier, IAviatorCruiser *aviator, ship::airvector &current_aircraft);
 
         /**
          * @brief Получает список вооружений
@@ -321,7 +320,7 @@ namespace acg {
          * @param current_aircraft Текущий вектор вооружений
          * @return true, если список получен успешно
          */
-        static bool getArmamentList(Cruiser *cruiser, AviatorCruiser *aviator, ship::armvector &current_aircraft);
+        static bool getArmamentList(ICruiser *cruiser, IAviatorCruiser *aviator, ship::armvector &current_aircraft);
 
         /**
          * @brief Проверка бюджета

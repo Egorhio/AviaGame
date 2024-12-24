@@ -33,31 +33,15 @@ namespace acg {
         double attack_radius = 0.0;                  ///< Радиус атаки (км)
 
     public:
-        // Конструктор с параметрами
+
+        /**
+         * @brief Конструктор с параметрами.
+         * Создает объект Aircraft с заданными параметрами.
+         * @throw std::invalid_argument Если какой-либо параметр имеет недопустимое значение.
+         */
         Aircraft(AircraftType type, int damage, bool active, int durability,
                  double speed, double fuel_consumption, double fuel_capacity,
-                 double refuel_speed, double cost, double attack_radius)
-                : type(type)
-                , damage(damage)
-                , active(active)
-                , durability(durability)
-                , speed(speed)
-                , fuel_consumption(fuel_consumption)
-                , fuel_capacity(fuel_capacity)
-                , refuel_speed(refuel_speed)
-                , cost(cost)
-                , attack_radius(attack_radius) {
-
-            // Валидация параметров
-            if (damage < 0) throw std::invalid_argument("Damage cannot be negative");
-            if (durability < 0) throw std::invalid_argument("Durability cannot be negative");
-            if (speed < 0) throw std::invalid_argument("Speed cannot be negative");
-            if (fuel_consumption < 0) throw std::invalid_argument("Fuel consumption cannot be negative");
-            if (fuel_capacity < 0) throw std::invalid_argument("Fuel capacity cannot be negative");
-            if (refuel_speed < 0) throw std::invalid_argument("Refuel speed cannot be negative");
-            if (cost < 0) throw std::invalid_argument("Cost cannot be negative");
-            if (attack_radius < 0) throw std::invalid_argument("Attack radius cannot be negative");
-        }
+                 double refuel_speed, double cost, double attack_radius);
 
         /** @brief Конструктор по умолчанию */
         Aircraft() = default;
@@ -200,6 +184,15 @@ namespace acg {
          */
         [[nodiscard]] double getEffectiveAttackRadius() const;
 
+        /**
+        * @brief Оператор сравнения равенства для объектов Aircraft.
+        *
+        * Сравнивает текущий объект Aircraft с другим объектом Aircraft на равенство.
+        * Два объекта считаются равными, если все их значимые поля совпадают.
+        *
+        * @param other Объект Aircraft, с которым происходит сравнение.
+        * @return true, если объекты равны, иначе false.
+        */
         bool operator==(const Aircraft& other) const;
     };
 

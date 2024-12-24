@@ -2,6 +2,30 @@
 
 namespace acg {
 
+    Aircraft::Aircraft(AircraftType type, int damage, bool active, int durability,
+                       double speed, double fuel_consumption, double fuel_capacity,
+                       double refuel_speed, double cost, double attack_radius)
+            : type(type)
+            , damage(damage)
+            , active(active)
+            , durability(durability)
+            , speed(speed)
+            , fuel_consumption(fuel_consumption)
+            , fuel_capacity(fuel_capacity)
+            , refuel_speed(refuel_speed)
+            , cost(cost)
+            , attack_radius(attack_radius) {
+        // Валидация параметров
+        if (damage < 0) throw std::invalid_argument("Damage cannot be negative");
+        if (durability < 0) throw std::invalid_argument("Durability cannot be negative");
+        if (speed < 0) throw std::invalid_argument("Speed cannot be negative");
+        if (fuel_consumption < 0) throw std::invalid_argument("Fuel consumption cannot be negative");
+        if (fuel_capacity < 0) throw std::invalid_argument("Fuel capacity cannot be negative");
+        if (refuel_speed < 0) throw std::invalid_argument("Refuel speed cannot be negative");
+        if (cost < 0) throw std::invalid_argument("Cost cannot be negative");
+        if (attack_radius < 0) throw std::invalid_argument("Attack radius cannot be negative");
+    }
+
     Aircraft::AircraftType Aircraft::getType() const {
         return type;
     }
