@@ -2,6 +2,33 @@
 
 namespace acg {
 
+    AviatorCruiser::AviatorCruiser(Ship::shiptype type, const std::string& name,
+                                   const std::string& captain_rank, const std::string& captain_name,
+                                   double speed, int durability, double cost,
+                                   int max_arm_capacity, int storage_cap, int max_aircraft_cap)
+            : Ship(type, name, captain_rank, captain_name, speed, durability, cost),
+              max_armament_capacity(max_arm_capacity),
+              storage_capacity(storage_cap),
+              max_aircraft_capacity(max_aircraft_cap)
+    {
+        if (type != Ship::shiptype::AVIATORCRUISER) {
+            throw std::invalid_argument("Invalid ship type for AviatorCruiser");
+        }
+        if (max_arm_capacity < 0) {
+            throw std::invalid_argument("Max armament capacity cannot be negative");
+        }
+        if (storage_cap < 0) {
+            throw std::invalid_argument("Storage capacity cannot be negative");
+        }
+        if (max_aircraft_cap < 0) {
+            throw std::invalid_argument("Max aircraft capacity cannot be negative");
+        }
+
+        armament.clear();
+        ammo_storage.clear();
+        aircrafts.clear();
+    }
+
     int AviatorCruiser::getMaxAircraftCapacity() const {
         return max_aircraft_capacity;
     }

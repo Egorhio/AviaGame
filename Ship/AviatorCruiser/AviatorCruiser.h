@@ -31,6 +31,25 @@ namespace acg {
         int max_aircraft_capacity = 0;     ///< Максимальная вместимость самолётов на борту.
 
     public:
+
+        /**
+         * @brief Конструктор класса AviatorCruiser
+         * @param type Тип корабля (должен быть AVIATORCRUISER)
+         * @param name Название корабля
+         * @param captain_rank Звание капитана
+         * @param captain_name Имя капитана
+         * @param speed Скорость корабля
+         * @param durability Прочность корабля
+         * @param cost Базовая стоимость корабля
+         * @param max_arm_capacity Максимальная вместимость вооружения
+         * @param storage_cap Вместимость склада боеприпасов
+         * @param max_aircraft_cap Максимальная вместимость самолётов
+         * @throws std::invalid_argument если переданы некорректные параметры
+         */
+        AviatorCruiser(Ship::shiptype type, const std::string& name,
+                                       const std::string& captain_rank, const std::string& captain_name,
+                                       double speed, int durability, double cost,
+                                       int max_arm_capacity, int storage_cap, int max_aircraft_cap);
         /**
          * @brief Конструктор по умолчанию.
          */

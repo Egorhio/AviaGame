@@ -88,3 +88,8 @@ target_link_libraries(Tabletests gtest gtest_main)
 # Регистрируем тесты
 add_test(NAME all_tests COMMAND tests)
 
+add_executable(MeasuringTimeRaid
+        ${SOURCES}
+        Mission/MeasuringSpeedWorkMethod.cpp
+)
+

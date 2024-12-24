@@ -1,5 +1,5 @@
 #pragma once
-
+#include <future>
 #include "Table.h"
 #include "Cruiser/Cruiser.h"
 #include "AircraftCarrier/AircraftCarrier.h"
@@ -299,7 +299,14 @@ namespace acg {
         MissionError markEnemyAsReached(const std::string& enemy_call_sign);
 
         /**
-         * @brief Симулирует рейд
+         * @brief Симулирует рейд В МНОГОПОТОЧНОМ РЕЖИМЕ
+         * @param squad Вектор самолетов
+         * @return Код ошибки
+         */
+        MissionError simulateRaidParallel(const ship::airvector& squad);
+
+        /**
+         * @brief Симулирует рейд В ОДНОПОТОЧНОМ РЕЖИМЕ
          * @param squad Вектор самолетов
          * @return Код ошибки
          */
