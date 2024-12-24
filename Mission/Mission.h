@@ -28,6 +28,7 @@ namespace acg {
     /**
      * @class Mission
      * @brief Класс, представляющий миссию
+     * @date 2024
      */
     class Mission {
     private:

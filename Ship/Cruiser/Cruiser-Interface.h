@@ -1,3 +1,9 @@
+/**
+ * @file Cruiser-Interface.h
+ * @brief Интерфейс для всех вооруженных кораблей в игре
+ * @author Egor Volkov
+ * @date 2024
+ */
 #pragma once
 
 #include "Ship.h"
@@ -40,8 +46,19 @@ namespace acg {
          */
         virtual void fireAtAircraft(const ship::airvector& enemy_aircraft) = 0;
 
+        /**
+         * @brief Получить текущее вооружение корабля
+         * @return std::optional<ship::armvector> - вектор вооружения корабля
+         *         nullopt если вооружение отсутствует
+         * @nodiscard указывает, что возвращаемое значение не должно игнорироваться
+         */
         [[nodiscard]] virtual std::optional<ship::armvector> getArmament() const = 0;
 
+        /**
+         * @brief Изменить вооружение корабля
+         * @param new_armament Новый вектор вооружения
+         * @throw std::invalid_argument если превышена максимальная вместимость вооружения
+         */
         virtual void modifyArmament(const ship::armvector& new_armament) = 0;
     };
 

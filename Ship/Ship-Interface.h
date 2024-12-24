@@ -2,6 +2,7 @@
  * @file Ship-Interface.h
  * @brief Интерфейс для всех типов кораблей в игре
  * @author Egor Volkov
+ * @date 2024
  */
 #pragma once
 

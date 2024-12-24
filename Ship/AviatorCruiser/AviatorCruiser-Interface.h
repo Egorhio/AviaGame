@@ -1,3 +1,10 @@
+/**
+ * @file AviatorCruiser-Interface.h
+ * @brief Интерфейс для всех авианесущих крейсеров в игре
+ * @author Egor Volkov
+ * @date 2024
+ */
+
 #pragma once
 
 #include "../AircraftCarrier/AircraftCarrier-Interface.h"
