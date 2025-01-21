@@ -180,3 +180,32 @@ TEST_F(ShipTableTest, IteratorConcepts) {
     static_assert(std::is_same_v<Iterator::reference, std::pair<std::string, acg::Ship*>&>,
                   "reference должен быть std::pair<std::string, acg::Ship*>&");
 }
+
+
+TEST_F(ShipTableTest, ForwardIteratorForLoop) {
+    // Добавляем несколько кораблей в таблицу
+    auto* ship1 = new acg::Ship(acg::Ship::shiptype::CRUISER,
+                                "Test1", "Captain", "John", 30.0, 100, 500.0);
+    auto* ship2 = new acg::Ship(acg::Ship::shiptype::CRUISER,
+                                "Test2", "Captain", "Jack", 30.0, 100, 500.0);
+    auto* ship3 = new acg::Ship(acg::Ship::shiptype::CRUISER,
+                                "Test3", "Captain", "Jim", 30.0, 100, 500.0);
+    table->addShip("TEST1", ship1);
+    table->addShip("TEST2", ship2);
+    table->addShip("TEST3", ship3);
+
+    // Проверяем работу for-цикла с итератором
+
+    auto begin = table->getIterator();
+    auto end = table->getIterator();
+    while(end.hasNext()) ++end;
+
+    int count = 0;
+    for (auto iter = begin; iter != end; ++iter) {
+        auto [call_sign, ship] = *iter;
+        EXPECT_TRUE(ship != nullptr);
+        EXPECT_TRUE(call_sign.find("TEST") != std::string::npos);
+        count++;
+    }
+    EXPECT_EQ(count, 3);
+}

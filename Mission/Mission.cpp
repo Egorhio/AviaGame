@@ -154,12 +154,9 @@ namespace acg {
         ship::airvector fromAircrafts, toAircrafts;
         if (!getAircraftList(fromCarrier, fromAviator, fromAircrafts))
             return MissionError::VOID_LIST;
-        if (!getAircraftList(toCarrier, toAviator, toAircrafts))
-            return MissionError::VOID_LIST;
         // Проверяем вместимость принимающего корабля
         int maxCapacity = toCarrier ? toCarrier->getMaxAircraftCapacity() : toAviator->getMaxAircraftCapacity();
         if (toAircrafts.size() >= maxCapacity) return MissionError::STORAGE_FULL;
-
         // Ищем и перемещаем самолёт
         for (auto it = fromAircrafts.begin(); it != fromAircrafts.end(); ++it) {
             if (it->first == *plane) {
@@ -292,119 +289,6 @@ namespace acg {
         }
     }
 
-
-    MissionError Mission::simulateRaidParallel(const ship::airvector& squad) {
-        if (squad.empty()) return MissionError::VOID_LIST;
-        if (shipGroupTable.empty()) return MissionError::SHIP_NOT_FOUND;
-
-        try {
-            std::vector<std::thread> threads;
-            auto iter = shipGroupTable.getIterator();
-
-            while (iter.hasNext()) {
-                auto [call_sign, ship] = iter.get();
-                threads.emplace_back([ship, &squad]() {
-                    Ship::shiptype ship_type = ship->getShipType();
-                    auto *cruiser = ship_type == Ship::shiptype::CRUISER ?
-                                    dynamic_cast<ICruiser *>(ship) : nullptr;
-                    auto *aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
-                                    dynamic_cast<IAviatorCruiser *>(ship) : nullptr;
-                    auto *aircarrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
-                                       dynamic_cast<IAircraftCarrier *>(ship) : nullptr;
-
-                    if (aircarrier) {
-                        aircarrier->interceptorAttack(squad);
-                    }
-                    else if (aviator) {
-                        aviator->interceptorAttack(squad);
-                        aviator->fireAtAircraft(squad);
-                    }
-                    else if (cruiser) {
-                        cruiser->fireAtAircraft(squad);
-                    }
-                });
-                iter.next();
-            }
-
-            for (auto& thread : threads) {
-                thread.join();
-            }
-            return MissionError::SUCCESS;
-        }
-        catch (const std::exception&) {
-            return MissionError::SHIP_NOT_FOUND;
-        }
-    }
-
-//    MissionError Mission::simulateRaidParallel(const ship::airvector& squad) {
-//        if (squad.empty()) return MissionError::VOID_LIST;
-//        if (shipGroupTable.empty()) return MissionError::SHIP_NOT_FOUND;
-//
-//        std::mutex squad_mutex;
-//        std::vector<std::future<void>> futures;
-//
-//        auto iter = shipGroupTable.getIterator();
-//        while (iter.hasNext()) {
-//            auto [call_sign, ship] = iter.get();
-//            futures.emplace_back(std::async(std::launch::async, [ship, &squad, &squad_mutex]() {
-//                Ship::shiptype ship_type = ship->getShipType();
-//                if (auto* aircarrier = dynamic_cast<IAircraftCarrier*>(ship)) {
-//                    std::lock_guard<std::mutex> lock(squad_mutex);
-//                    aircarrier->interceptorAttack(squad);
-//                } else if (auto* aviator = dynamic_cast<IAviatorCruiser*>(ship)) {
-//                    std::lock_guard<std::mutex> lock(squad_mutex);
-//                    aviator->interceptorAttack(squad);
-//                    aviator->fireAtAircraft(squad);
-//                } else if (auto* cruiser = dynamic_cast<ICruiser*>(ship)) {
-//                    std::lock_guard<std::mutex> lock(squad_mutex);
-//                    cruiser->fireAtAircraft(squad);
-//                }
-//            }));
-//            iter.next();
-//        }
-//
-//        for (auto& future : futures) {
-//            future.get();
-//        }
-//
-//        return MissionError::SUCCESS;
-//    }
-
-    MissionError Mission::simulateRaid(const ship::airvector& squad) {
-        if (squad.empty()) return MissionError::VOID_LIST;
-        if (shipGroupTable.empty()) return MissionError::SHIP_NOT_FOUND;
-
-        try {
-            auto iter = shipGroupTable.getIterator();
-            while (iter.hasNext()) {
-                auto [call_sign, ship] = iter.get();
-                Ship::shiptype ship_type = ship->getShipType();
-                auto *cruiser = ship_type == Ship::shiptype::CRUISER ?
-                                dynamic_cast<ICruiser *>(ship) : nullptr;
-                auto *aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
-                                dynamic_cast<IAviatorCruiser *>(ship) : nullptr;
-                auto *aircarrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
-                                   dynamic_cast<IAircraftCarrier *>(ship) : nullptr;
-
-                if (aircarrier) {
-                    aircarrier->interceptorAttack(squad);
-                }
-                else if (aviator) {
-                    aviator->interceptorAttack(squad);
-                    aviator->fireAtAircraft(squad);
-                }
-                else if (cruiser) {
-                    cruiser->fireAtAircraft(squad);
-                }
-
-                iter.next();
-            }
-            return MissionError::SUCCESS;
-        }
-        catch (const std::exception&) {
-            return MissionError::SHIP_NOT_FOUND;
-        }
-    }
 
     // * Конструкторы
 

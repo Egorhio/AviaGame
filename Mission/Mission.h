@@ -6,6 +6,8 @@
 #include "AviatorCruiser/AviatorCruiser.h"
 #include <thread>
 
+#include <iostream>
+
 namespace acg {
 
     /**
@@ -297,20 +299,6 @@ namespace acg {
          * @return Код ошибки
          */
         MissionError markEnemyAsReached(const std::string& enemy_call_sign);
-
-        /**
-         * @brief Симулирует рейд В МНОГОПОТОЧНОМ РЕЖИМЕ
-         * @param squad Вектор самолетов
-         * @return Код ошибки
-         */
-        MissionError simulateRaidParallel(const ship::airvector& squad);
-
-        /**
-         * @brief Симулирует рейд В ОДНОПОТОЧНОМ РЕЖИМЕ
-         * @param squad Вектор самолетов
-         * @return Код ошибки
-         */
-        MissionError simulateRaid(const ship::airvector& squad);
 
         /**
          * @brief Получает список самолетов

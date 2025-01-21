@@ -5,6 +5,7 @@
  * @date 2024
  */
 #pragma once
+#include <iostream>
 
 #include "Ship.h"
 

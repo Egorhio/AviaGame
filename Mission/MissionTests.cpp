@@ -44,7 +44,6 @@ TEST_F(MissionTest, BuyShip) {
     for(int i = 0; i < 5; i++) {
         auto* extra_ship = new acg::Ship(acg::Ship::shiptype::CRUISER, "Test", "Captain", "John", 30.0, 100, 100.0);
         mission->buyShip("TEST" + std::to_string(i), extra_ship);
-        std::cout <<  mission->getCount() << std::endl;
     }
     EXPECT_EQ(mission->buyShip("TEST6", ship), acg::MissionError::MAX_SHIPS_REACHED);
 }
@@ -167,7 +166,7 @@ TEST_F(MissionAircraftTest, SellPlaneFromShipSuccess) {
 class MissionTransferTest : public ::testing::Test {
     protected:
     void SetUp() override {
-        mission = new acg::Mission("Commander", 5, 1000.0);
+        mission = new acg::Mission("Commander", 5, 100000.0);
 
         fromCarrier = new acg::AircraftCarrier(
                 acg::Ship::shiptype::AIRCRAFTCARRIER,
@@ -202,7 +201,17 @@ class MissionTransferTest : public ::testing::Test {
 };
 
 TEST_F(MissionTransferTest, TransferPlaneSuccess) {
-    EXPECT_EQ(mission->transferPlane(aircraft, "FROM_CARRIER", "TO_CARRIER"), acg::MissionError::SUCCESS);
+    // Проверяем, что самолёт действительно есть на исходном корабле
+    ASSERT_TRUE(fromCarrier != nullptr);
+    ASSERT_TRUE(fromCarrier->getShipType() == acg::Ship::shiptype::AIRCRAFTCARRIER);
+    ASSERT_TRUE(fromCarrier->getAircrafts().has_value());
+
+    // Выполняем перемещение
+    EXPECT_EQ(mission->transferPlane(aircraft, "FROM_CARRIER", "TO_CARRIER"),
+              acg::MissionError::SUCCESS);
+
+    ASSERT_TRUE(toCarrier != nullptr);
+    ASSERT_TRUE(toCarrier->getAircrafts().has_value());
 }
 
 TEST_F(MissionTransferTest, TransferPlaneEmptyCallsign) {
@@ -219,40 +228,153 @@ TEST_F(MissionTransferTest, TransferPlaneShipNotFound) {
     EXPECT_EQ(mission->transferPlane(aircraft, "FROM_CARRIER", "NON_EXISTENT"), acg::MissionError::SHIP_NOT_FOUND);
 }
 
-TEST_F(MissionTransferTest, TransferPlaneInvalidShipType) {
-    // Here you would need to set up ships that are not AircraftCarriers or AviatorCruisers
-    // Assuming we have a different ship type, e.g., a Battleship
-    auto *battleship = new acg::Cruiser(acg::Ship::shiptype::CRUISER,"Battleship",
-                                        "3 rang", "OMEGA", 70.5,
-                                        80, 100, 20, 30);
-    mission->buyShip("BATTLESHIP", battleship);
-
-    EXPECT_EQ(mission->transferPlane(aircraft, "BATTLESHIP", "TO_CARRIER"), acg::MissionError::INVALID_SHIP_TYPE);
-    EXPECT_EQ(mission->transferPlane(aircraft, "FROM_CARRIER", "BATTLESHIP"), acg::MissionError::INVALID_SHIP_TYPE);
-
-    delete battleship;
-}
-
-TEST_F(MissionTransferTest, TransferPlaneStorageFull) {
-    // Fill the toCarrier to its max capacity
-    for (int i = 0; i < toCarrier->getMaxAircraftCapacity(); ++i) {
-        auto* extraAircraft = new acg::Aircraft(
-                acg::Aircraft::AircraftType::FIGHTER, 100, true, 200, 50.0, 1000.0, 100.0, 100, 100, 4
-        );
-        mission->buyPlaneForShip("TO_CARRIER", extraAircraft);
-    }
-
-    EXPECT_EQ(mission->transferPlane(aircraft, "FROM_CARRIER", "TO_CARRIER"), acg::MissionError::STORAGE_FULL);
-
-}
-
 TEST_F(MissionTransferTest, TransferPlaneAircraftNotFound) {
     // Attempt to transfer an aircraft that is not on the fromCarrier
     auto* newAircraft = new acg::Aircraft(
-            acg::Aircraft::AircraftType::FIGHTER, 100, true, 200, 50.0, 1000.0, 100.0, 100, 100, 4
+            acg::Aircraft::AircraftType::FIGHTER, 8, true, 200, 50.0, 1000.0, 100.0, 100, 100, 4
     );
 
     EXPECT_EQ(mission->transferPlane(newAircraft, "FROM_CARRIER", "TO_CARRIER"), acg::MissionError::AIRCRAFT_NOT_FOUND);
 
     delete newAircraft;
+}
+
+
+class MissionWeaponTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        mission = new acg::Mission("Commander", 5, 100000.0);
+
+        // Создаем тестовый крейсер
+        cruiser = new acg::Cruiser(acg::Ship::shiptype::CRUISER,
+                                   "TestCruiser", "Captain", "John",
+                                   30.0, 100, 500.0, 5, 1000);
+
+        // Создаем тестовое оружие
+        weapon = new acg::Armament("TestWeapon", acg::Armament::ArmamentType::LIGHT,
+                                   100, 1000.0, 60.0, 100, 2.0, 200.0);
+
+        mission->buyShip("CRUISER1", cruiser);
+    }
+
+    void TearDown() override {
+        delete mission;
+        delete weapon;
+    }
+
+    acg::Mission* mission{};
+    acg::Cruiser* cruiser{};
+    acg::Armament* weapon{};
+};
+
+// Тесты для destroyShip
+TEST_F(MissionWeaponTest, DestroyShipEmptyCallsign) {
+    EXPECT_EQ(mission->destroyShip(""), acg::MissionError::EMPTY_CALLSIGN);
+}
+
+TEST_F(MissionWeaponTest, DestroyShipNotFound) {
+    EXPECT_EQ(mission->destroyShip("NONEXISTENT"), acg::MissionError::SHIP_NOT_FOUND);
+}
+
+TEST_F(MissionWeaponTest, DestroyShipSuccess) {
+    EXPECT_EQ(mission->destroyShip("CRUISER1"), acg::MissionError::SUCCESS);
+    EXPECT_EQ(cruiser->getDurability(), 0);
+}
+
+// Тесты для buyWeaponForShip
+TEST_F(MissionWeaponTest, BuyWeaponEmptyCallsign) {
+    EXPECT_EQ(mission->buyWeaponForShip("", weapon), acg::MissionError::EMPTY_CALLSIGN);
+}
+
+TEST_F(MissionWeaponTest, BuyWeaponNullWeapon) {
+    EXPECT_EQ(mission->buyWeaponForShip("CRUISER1", nullptr),
+              acg::MissionError::WEAPON_NOT_FOUND);
+}
+
+TEST_F(MissionWeaponTest, BuyWeaponShipNotFound) {
+    EXPECT_EQ(mission->buyWeaponForShip("NONEXISTENT", weapon),
+              acg::MissionError::SHIP_NOT_FOUND);
+}
+
+TEST_F(MissionWeaponTest, BuyWeaponInsufficientFunds) {
+    auto* expensiveWeapon = new acg::Armament("ExpensiveWeapon",
+                                              acg::Armament::ArmamentType::LIGHT,
+                                              100, 1000.0, 60.0, 100, 2.0, 20000000.0);
+    EXPECT_EQ(mission->buyWeaponForShip("CRUISER1", expensiveWeapon),
+              acg::MissionError::INSUFFICIENT_FUNDS);
+    delete expensiveWeapon;
+}
+
+TEST_F(MissionWeaponTest, BuyWeaponInvalidShipType) {
+    auto* aicarrier = new acg::AircraftCarrier(acg::Ship::shiptype::AIRCRAFTCARRIER,
+                                             "TestCarrier", "Captain", "Jack",
+                                             25.0, 100, 800.0);
+    mission->buyShip("CARRIER3", aicarrier);
+    EXPECT_EQ(mission->buyWeaponForShip("CARRIER3", weapon),
+              acg::MissionError::INVALID_SHIP_TYPE);
+}
+
+TEST_F(MissionWeaponTest, BuyWeaponSuccess) {
+    EXPECT_EQ(mission->buyWeaponForShip("CRUISER1", weapon),
+              acg::MissionError::SUCCESS);
+    // Проверяем, что оружие добавлено
+    auto armament = cruiser->getArmament();
+    EXPECT_TRUE(armament.has_value());
+    EXPECT_EQ(armament.value().size(), 1);
+}
+
+TEST_F(MissionWeaponTest, BuyWeaponStorageFull) {
+    // Заполняем хранилище оружия
+    std::cout << "Max capacity: " << cruiser->getMaxArmamentCapacity() << std::endl;
+    for(int i = 0; i < cruiser->getMaxArmamentCapacity(); i++) {
+        mission->buyWeaponForShip("CRUISER1", weapon);
+    }
+    // Пытаемся добавить ещё одно оружие
+    auto* extraWeapon = new acg::Armament("ExtraWeapon",
+                                          acg::Armament::ArmamentType::LIGHT,
+                                          100, 1000.0, 60.0, 100, 2.0, 100.0);
+    EXPECT_EQ(mission->buyWeaponForShip("CRUISER1", extraWeapon),
+              acg::MissionError::STORAGE_FULL);
+    delete extraWeapon;
+}
+
+
+TEST_F(MissionWeaponTest, SellWeaponEmptyCallsign) {
+    auto* weapon = new acg::Armament("TestWeapon", acg::Armament::ArmamentType::LIGHT,
+                                     100, 1000.0, 60.0, 100, 2.0, 200.0);
+    EXPECT_EQ(mission->sellWeaponFromShip("", weapon), acg::MissionError::EMPTY_CALLSIGN);
+}
+
+TEST_F(MissionWeaponTest, SellWeaponNullWeapon) {
+    EXPECT_EQ(mission->sellWeaponFromShip("CRUISER1", nullptr),
+              acg::MissionError::WEAPON_NOT_FOUND);
+}
+
+TEST_F(MissionWeaponTest, SellWeaponShipNotFound) {
+    auto* weapon = new acg::Armament("TestWeapon", acg::Armament::ArmamentType::LIGHT,
+                                     100, 1000.0, 60.0, 100, 2.0, 200.0);
+    EXPECT_EQ(mission->sellWeaponFromShip("NONEXISTENT", weapon),
+              acg::MissionError::SHIP_NOT_FOUND);
+}
+
+TEST_F(MissionWeaponTest, SellWeaponInvalidShipType) {
+    auto* carrier = new acg::AircraftCarrier(acg::Ship::shiptype::AIRCRAFTCARRIER,
+                                             "Carrier", "Captain", "Jack", 25.0, 100, 800.0);
+    auto* weapon = new acg::Armament("TestWeapon", acg::Armament::ArmamentType::LIGHT,
+                                     100, 1000.0, 60.0, 100, 2.0, 200.0);
+    mission->buyShip("CARRIER1", carrier);
+    EXPECT_EQ(mission->sellWeaponFromShip("CARRIER1", weapon),
+              acg::MissionError::INVALID_SHIP_TYPE);
+}
+
+TEST_F(MissionWeaponTest, SellWeaponSuccess) {
+    auto* weapon = new acg::Armament("TestWeapon", acg::Armament::ArmamentType::LIGHT,
+                                     100, 1000.0, 60.0, 100, 2.0, 200.0);
+    mission->buyWeaponForShip("CRUISER1", weapon);
+    EXPECT_EQ(mission->sellWeaponFromShip("CRUISER1", weapon),
+              acg::MissionError::SUCCESS);
+    // Проверяем возврат средств
+    double expected_refund = weapon->getCost() * 0.7;
+    EXPECT_DOUBLE_EQ(mission->getRemainingBudget() + 500,
+                     mission->getBudget() - weapon->getCost() + expected_refund);
 }

@@ -98,17 +98,17 @@ namespace acg {
         static bool is_reloading = false;
         const int reload_interval_calls = static_cast<int>(weapon.getReloadSpeed());
 
+        // Проверяем наличие боеприпасов до начала перезарядки
+        auto ammo_info = getAmmoInfo(weapon.getAmmoName());
+        if (!ammo_info || ammo_info->quantity <= 0) {
+            return;
+        }
 
         if (!is_reloading) {
             reload_call_count = 0;
             is_reloading = true;
         }
 
-        auto ammo_info = getAmmoInfo(weapon.getAmmoName());
-        if (!ammo_info) {
-            return;
-        }
-        // Увеличиваем счетчик вызовов
         reload_call_count++;
         // Проверяем, прошло ли достаточно "времени" для перезарядки
         if (reload_call_count >= reload_interval_calls) {
@@ -116,7 +116,6 @@ namespace acg {
             if (needed_ammo <= 0) {
                 return;
             }
-
             int available_ammo = std::min(needed_ammo, ammo_info->quantity);
             if (available_ammo > 0) {
                 const_cast<Armament&>(weapon).setCurrentAmmo(
