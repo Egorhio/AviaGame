@@ -382,7 +382,7 @@ namespace acg {
             if (ship->getShipType() == Ship::shiptype::CRUISER ||
                 ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
                 defense_threads.emplace_back([&, ship]() {
-                    std::lock_guard<std::mutex> lock(aircraft_mutex);
+                    std::lock_guard<std::mutex> lock_guard(aircraft_mutex);
                     if (auto* defender = dynamic_cast<ICruiser*>(ship)) {
                         defender->fireAtAircraft(attacking_aircraft);
                     }

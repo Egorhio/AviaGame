@@ -1,10 +1,8 @@
 #pragma once
-#include <future>
 #include "Table.h"
 #include "Cruiser/Cruiser.h"
 #include "AircraftCarrier/AircraftCarrier.h"
 #include "AviatorCruiser/AviatorCruiser.h"
-#include <thread>
 
 #include <iostream>
 

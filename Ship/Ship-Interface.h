@@ -11,6 +11,8 @@
 #include <vector>
 #include <map>
 #include <valarray>
+#include <thread>
+#include <chrono>
 
 namespace acg {
 
