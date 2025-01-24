@@ -25,7 +25,7 @@ namespace acg {
         }
     }
 
-    void AircraftCarrier::bomberAttack(const ship::coordinate& target_coordinates) {
+    void AircraftCarrier::bomberAttack(const ship::coordinate &target_coordinates) {
         if (aircrafts.empty()) return;
 
         auto current_pos = current_coordinates;
@@ -77,8 +77,7 @@ namespace acg {
         if (aircrafts.empty()) return;
         auto current_pos = current_coordinates;
         for (auto& [aircraft, pos] : aircrafts) {
-            if (aircraft.getType() == Aircraft::AircraftType::FIGHTER &&
-                aircraft.getActive()) {
+            if (aircraft.getType() == Aircraft::AircraftType::FIGHTER && aircraft.getActive()) {
                 for (const auto& [enemy_id, enemy_pos] : enemy_aircraft) {
                     double distance = calculateDistance(enemy_pos, current_pos);
                     aircraft.makeAttackRun(distance);

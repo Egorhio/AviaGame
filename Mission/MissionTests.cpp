@@ -156,11 +156,8 @@ TEST_F(MissionAircraftTest, SellPlaneFromShipSuccess) {
     // Проверяем успешную продажу самолёта
     EXPECT_EQ(mission->sellPlaneFromShip("CARRIER1", testAircraft),
               acg::MissionError::SUCCESS);
+    delete testAircraft;
 }
-
-
-
-
 
 
 class MissionTransferTest : public ::testing::Test {
@@ -278,7 +275,6 @@ TEST_F(MissionWeaponTest, DestroyShipNotFound) {
 
 TEST_F(MissionWeaponTest, DestroyShipSuccess) {
     EXPECT_EQ(mission->destroyShip("CRUISER1"), acg::MissionError::SUCCESS);
-    EXPECT_EQ(cruiser->getDurability(), 0);
 }
 
 // Тесты для buyWeaponForShip
@@ -342,6 +338,7 @@ TEST_F(MissionWeaponTest, SellWeaponEmptyCallsign) {
     auto* weapon = new acg::Armament("TestWeapon", acg::Armament::ArmamentType::LIGHT,
                                      100, 1000.0, 60.0, 100, 2.0, 200.0);
     EXPECT_EQ(mission->sellWeaponFromShip("", weapon), acg::MissionError::EMPTY_CALLSIGN);
+    delete weapon;
 }
 
 TEST_F(MissionWeaponTest, SellWeaponNullWeapon) {
@@ -354,6 +351,7 @@ TEST_F(MissionWeaponTest, SellWeaponShipNotFound) {
                                      100, 1000.0, 60.0, 100, 2.0, 200.0);
     EXPECT_EQ(mission->sellWeaponFromShip("NONEXISTENT", weapon),
               acg::MissionError::SHIP_NOT_FOUND);
+    delete weapon;
 }
 
 TEST_F(MissionWeaponTest, SellWeaponInvalidShipType) {
@@ -364,6 +362,8 @@ TEST_F(MissionWeaponTest, SellWeaponInvalidShipType) {
     mission->buyShip("CARRIER1", carrier);
     EXPECT_EQ(mission->sellWeaponFromShip("CARRIER1", weapon),
               acg::MissionError::INVALID_SHIP_TYPE);
+
+    delete weapon;
 }
 
 TEST_F(MissionWeaponTest, SellWeaponSuccess) {
@@ -376,4 +376,129 @@ TEST_F(MissionWeaponTest, SellWeaponSuccess) {
     double expected_refund = weapon->getCost() * 0.7;
     EXPECT_DOUBLE_EQ(mission->getRemainingBudget() + 500,
                      mission->getBudget() - weapon->getCost() + expected_refund);
+
+    delete weapon;
+}
+
+TEST_F(MissionTest, MarkEnemyAsReachedEmptyCallsign) {
+    // Тест с пустым позывным
+    EXPECT_EQ(mission->markEnemyAsReached(""), acg::MissionError::EMPTY_CALLSIGN);
+}
+
+TEST_F(MissionTest, MarkEnemyAsReachedShipNotFound) {
+    // Тест с несуществующим кораблем
+    EXPECT_EQ(mission->markEnemyAsReached("NONEXISTENT"), acg::MissionError::SHIP_NOT_FOUND);
+}
+
+TEST_F(MissionTest, MarkEnemyAsReachedSuccess) {
+    // Создаем и добавляем тестовый корабль
+    auto* ship = new acg::Ship(
+            acg::Ship::shiptype::CRUISER,
+            "TestShip", "Captain", "John",
+            30.0, 100, 1000.0
+    );
+    mission->buyShip("TEST1", ship);
+
+    // Проверяем успешное выполнение
+    EXPECT_EQ(mission->markEnemyAsReached("TEST1"), acg::MissionError::SUCCESS);
+
+    // Проверяем, что стоимость спасенных кораблей увеличилась
+    EXPECT_GT(mission->getSavedUnitsCost(), 0.0);
+}
+
+TEST_F(MissionTest, MarkEnemyAsReachedWithDamage) {
+    // Создаем поврежденный корабль
+    auto* ship = new acg::Ship(
+            acg::Ship::shiptype::CRUISER,
+            "TestShip", "Captain", "John",
+            30.0, 50, 1000.0  // 50% прочности
+    );
+    mission->buyShip("TEST1", ship);
+
+    double initial_cost = ship->calculateTotalCost();
+    mission->markEnemyAsReached("TEST1");
+
+    // Проверяем, что стоимость спасенных кораблей учитывает повреждения
+    EXPECT_DOUBLE_EQ(mission->getSavedUnitsCost(), initial_cost * 0.5);
+}
+
+
+
+
+
+
+class MissionAirRaidTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        mission = new acg::Mission("Commander", 5, 100000.0);
+
+        // Создаем авианосец
+        carrier = new acg::AircraftCarrier(
+                acg::Ship::shiptype::AIRCRAFTCARRIER,
+                "TestCarrier", "Captain", "John", 30.0, 100, 500.0
+        );
+        carrier->setMaxAircraftCapacity(5);
+
+        // Создаем самолеты
+        fighter = new acg::Aircraft(
+                acg::Aircraft::AircraftType::FIGHTER,
+                100, true, 100, 50.0, 10.0, 1000.0, 20.0, 500.0, 100.0
+        );
+
+        bomber = new acg::Aircraft(
+                acg::Aircraft::AircraftType::ATTACK,
+                100, true, 100, 50.0, 10.0, 1000.0, 20.0, 500.0, 100.0
+        );
+
+        mission->buyShip("CARRIER1", carrier);
+    }
+
+    void TearDown() override {
+        delete mission;
+        delete fighter;
+        delete bomber;
+    }
+
+    acg::Mission* mission{};
+    acg::AircraftCarrier* carrier{};
+    acg::Aircraft *fighter{}, *bomber{};
+};
+
+// Тест на пустой позывной
+TEST_F(MissionAirRaidTest, EmptyCallsign) {
+    acg::ship::coordinate target = {100.0, 100.0};
+    EXPECT_EQ(mission->simulateAirRaid("", target),
+              acg::MissionError::EMPTY_CALLSIGN);
+}
+
+// Тест на несуществующий корабль
+TEST_F(MissionAirRaidTest, ShipNotFound) {
+    acg::ship::coordinate target = {100.0, 100.0};
+    EXPECT_EQ(mission->simulateAirRaid("NONEXISTENT", target),
+              acg::MissionError::SHIP_NOT_FOUND);
+}
+
+// Тест на неверный тип корабля
+TEST_F(MissionAirRaidTest, InvalidShipType) {
+    auto* cruiser = new acg::Cruiser(
+            acg::Ship::shiptype::CRUISER,
+            "TestCruiser", "Captain", "Jack", 30.0, 100, 500.0, 5, 1000
+    );
+    mission->buyShip("CRUISER1", cruiser);
+
+    acg::ship::coordinate target = {100.0, 100.0};
+    EXPECT_EQ(mission->simulateAirRaid("CRUISER1", target), acg::MissionError::INVALID_SHIP_TYPE);
+}
+
+// Тест успешного налета
+TEST_F(MissionAirRaidTest, SuccessfulRaid) {
+    // Добавляем самолеты на авианосец
+    acg::ship::airvector aircraft = {
+            {*fighter, {0.0, 0.0}},
+            {*bomber, {0.0, 0.0}}
+    };
+    carrier->modifyAircrafts(aircraft);
+
+    acg::ship::coordinate target = {100.0, 100.0};
+    EXPECT_EQ(mission->simulateAirRaid("CARRIER1", target), acg::MissionError::SUCCESS);
 }

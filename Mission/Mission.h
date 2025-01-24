@@ -323,6 +323,12 @@ namespace acg {
          * @return true, если бюджет достаточен
          */
         [[nodiscard]] bool checkBudget(double cost) const;
+
+        MissionError simulateAirRaid
+        (const std::string& carrier_callsign, const ship::coordinate& target_coordinates);
+
+        MissionError MULTIsimulateAirRaid
+        (const std::string& carrier_callsign, const ship::coordinate& target_coordinates);
     };
 
 } // namespace acg

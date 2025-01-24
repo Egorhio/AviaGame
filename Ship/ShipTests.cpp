@@ -50,26 +50,6 @@ TEST_F(ShipTest, CalculateTotalCostTest) {
     EXPECT_DOUBLE_EQ(aviator->calculateTotalCost(), 375.0); // 1500 * (25/100)
 }
 
-// Тесты для move
-TEST_F(ShipTest, MoveTest) {
-    acg::ship::coordinate dest = {100.0, 100.0};
-    cruiser->setCurrentCoordinates({0.0, 0.0});
-    cruiser->setDestinationCoordinates(dest);
-    cruiser->setSpeed(50.0);
-
-// Первый вызов (счетчик = 1)
-    cruiser->move();
-    auto pos1 = cruiser->getCurrentCoordinates();
-    EXPECT_EQ(pos1.first, 0.0);
-    EXPECT_EQ(pos1.second, 0.0);
-
-// Второй вызов (счетчик = 2, движение)
-    cruiser->move();
-    auto pos2 = cruiser->getCurrentCoordinates();
-    EXPECT_GT(pos2.first, 0.0);
-    EXPECT_GT(pos2.second, 0.0);
-}
-
 // Тесты для setDestination
 TEST_F(ShipTest, SetDestinationTest) {
     cruiser->setSpeed(10.0);
@@ -80,4 +60,63 @@ TEST_F(ShipTest, SetDestinationTest) {
 
 // Тест на слишком большую дистанцию
     EXPECT_THROW(cruiser->setDestination({1000.0, 1000.0}), std::invalid_argument);
+}
+
+
+class ShipMoveTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        ship = new acg::Ship(
+                acg::Ship::shiptype::CRUISER,
+                "TestShip", "Captain", "John",
+                30.0, 100, 500.0
+        );
+    }
+
+    void TearDown() override {
+        delete ship;
+    }
+
+    acg::Ship* ship{};
+};
+
+// Тест движения на дальнее расстояние
+TEST_F(ShipMoveTest, MoveLongDistance) {
+    ship->setSpeed(10.0);
+    ship->setCurrentCoordinates({0.0, 0.0});
+    ship->setDestinationCoordinates({10.0, 10.0});
+
+    ship->move();
+
+    auto pos = ship->getCurrentCoordinates();
+    EXPECT_GT(pos.first, 0.0);
+    EXPECT_GT(pos.second, 0.0);
+    EXPECT_LT(pos.first, 100.0);
+    EXPECT_LT(pos.second, 100.0);
+}
+
+// Тест движения на короткое расстояние
+TEST_F(ShipMoveTest, MoveShortDistance) {
+    ship->setSpeed(50.0);
+    ship->setCurrentCoordinates({0.0, 0.0});
+    ship->setDestinationCoordinates({5.0, 5.0});
+
+    ship->move();
+
+    auto pos = ship->getCurrentCoordinates();
+    EXPECT_DOUBLE_EQ(pos.first, 5.0);
+    EXPECT_DOUBLE_EQ(pos.second, 5.0);
+}
+
+// Тест движения при нулевом расстоянии
+TEST_F(ShipMoveTest, MoveZeroDistance) {
+    ship->setSpeed(10.0);
+    ship->setCurrentCoordinates({5.0, 5.0});
+    ship->setDestinationCoordinates({5.0, 5.0});
+
+    ship->move();
+
+    auto pos = ship->getCurrentCoordinates();
+    EXPECT_DOUBLE_EQ(pos.first, 5.0);
+    EXPECT_DOUBLE_EQ(pos.second, 5.0);
 }

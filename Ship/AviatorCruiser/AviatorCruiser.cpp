@@ -53,151 +53,92 @@ namespace acg {
     }
 
     void AviatorCruiser::bomberAttack(const ship::coordinate& target_coordinates) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 8; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
-        // Существующая логика...
         if (aircrafts.empty()) return;
-        auto current_pos = getCurrentCoordinates();
+
+        auto current_pos = current_coordinates;
+        double distance = calculateDistance(target_coordinates, current_pos);
+
+        const int AIRCRAFT_PER_WAVE = 2;
         airothervector available_bombers;
-        for (auto &[aircraft, aircraft_pos]: aircrafts) {
+
+        // Собираем доступные бомбардировщики
+        for (auto &[aircraft, _]: aircrafts) {
             if (aircraft.getType() == Aircraft::AircraftType::ATTACK &&
                 aircraft.getActive() &&
-                aircraft.getDurability() > 20) {
+                aircraft.getDurability() > 10 &&
+                distance <= aircraft.getAttackRadius()) {
                 available_bombers.push_back(&aircraft);
             }
         }
 
         if (available_bombers.empty()) return;
 
-        double distance = calculateDistance(target_coordinates, current_pos);
-        executeAttackWaves(available_bombers, distance);
+        // Выполняем атаку волнами
+        size_t waves = available_bombers.size() / AIRCRAFT_PER_WAVE;
+        for (int i = 0; i < waves * AIRCRAFT_PER_WAVE; i++) {
+            Aircraft* bomber = available_bombers[i];
+            int wave = i / AIRCRAFT_PER_WAVE;
 
+            bomber->makeAttackRun(distance);
+
+            // Расчет итогового урона с учетом волны
+            double wave_penalty = 1.0 - (0.1 * wave);
+            double distance_factor = 1.0 - (distance / bomber->getAttackRadius());
+            double durability_factor = bomber->getDurability() / 100.0;
+            int final_damage = static_cast<int>(bomber->getDamage() *
+                                                wave_penalty *
+                                                distance_factor *
+                                                durability_factor);
+
+            // Применение износа и расхода топлива
+            if (final_damage > 0) {
+                int wear = static_cast<int>(final_damage * 0.1 * (1 + distance / bomber->getAttackRadius()));
+                bomber->receiveDamage(wear);
+                bomber->setFuelCapacity(bomber->getFuelCapacity() -
+                                        bomber->getFuelConsumption() * distance * 2);
+            }
+        }
     }
 
-    void AviatorCruiser::executeAttackWaves(airothervector& available_bombers, double distance) {
-        const int AIRCRAFT_PER_WAVE = 3;
-        int waves = static_cast<int>(available_bombers.size()) / AIRCRAFT_PER_WAVE;
-        for (int wave = 0; wave < waves; ++wave) {
-            double wave_damage_multiplier = 1.0 - (0.1 * wave); // уменьшение эффективности каждой следующей волны
-            for (int i = 0; i < AIRCRAFT_PER_WAVE; ++i) {
-                Aircraft* bomber = available_bombers[wave * AIRCRAFT_PER_WAVE + i];
-                if (distance <= bomber->getAttackRadius()) {
-                    bomber->makeAttackRun(distance);
-                    int base_damage = bomber->getDamage();
+    void AviatorCruiser::interceptorAttack(const ship::airvector& enemy_aircraft) {
+        if (aircrafts.empty()) return;
+        auto current_pos = current_coordinates;
+        // Перебираем вражеские самолеты
+        for (const auto& [enemy_id, enemy_pos] : enemy_aircraft) {
+            double distance = calculateDistance(enemy_pos, current_pos);
 
-                    double distance_factor = 1.0 - (distance / bomber->getAttackRadius());
-                    double durability_factor = bomber->getDurability() / 100.0;
-                    double final_multiplier = wave_damage_multiplier * distance_factor * durability_factor;
+            // Ищем лучший истребитель для атаки
+            Aircraft* best_fighter = nullptr;
+            double best_efficiency = 0;
 
-                    int final_damage = static_cast<int>(base_damage * final_multiplier);
+            // Проверяем все доступные истребители
+            for (auto& [aircraft, pos] : aircrafts) {
+                if (aircraft.getType() == Aircraft::AircraftType::FIGHTER &&
+                    aircraft.getActive() &&
+                    aircraft.getDurability() > 30 &&
+                    aircraft.getFuelCapacity() > aircraft.getFuelConsumption() * 100) {
 
-                    if (final_damage > 0) {
-                        int wear = static_cast<int>(final_damage * 0.1 * (1 + distance / bomber->getAttackRadius()));
-                        bomber->receiveDamage(wear);
-                        bomber->setFuelCapacity(bomber->getFuelCapacity() - bomber->getFuelConsumption() * distance * 2); // туда и обратно
+                    if (distance <= aircraft.getEffectiveAttackRadius()) {
+                        double efficiency = (aircraft.getDurability() / 100.0) *
+                                            (aircraft.getFuelCapacity() / aircraft.getFuelConsumption()) *
+                                            (1.0 - distance / aircraft.getEffectiveAttackRadius());
+
+                        if (efficiency > best_efficiency) {
+                            best_efficiency = efficiency;
+                            best_fighter = &aircraft;
+                        }
                     }
                 }
             }
-        }
-    }
 
-
-    void AviatorCruiser::interceptorAttack(const ship::airvector& enemy_aircraft) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 3; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
-        // Существующая логика...
-        if (aircrafts.empty()) return;
-        auto ready_fighters = getReadyFighters();
-        if (ready_fighters.empty()) return;
-        assignTargetsToFighters(enemy_aircraft, ready_fighters);
-
-
-    }
-
-// ▎Функция 1: Получение списка готовых истребителей
-    airothervector AviatorCruiser::getReadyFighters() {
-        std::vector<Aircraft*> ready_fighters;
-        // Группируем истребители, которые готовы к атаке
-        for (auto& [aircraft, pos] : aircrafts) {
-            if (aircraft.getType() == Aircraft::AircraftType::FIGHTER &&
-                aircraft.getActive() &&
-                aircraft.getDurability() > 30 &&
-                aircraft.getFuelCapacity() > aircraft.getFuelConsumption() * 100) {
-                ready_fighters.push_back(&aircraft);
-            }
-        }
-        return ready_fighters;
-    }
-
-// ▎Функция 2: Распределение целей между истребителями
-    void AviatorCruiser::assignTargetsToFighters(const ship::airvector& enemy_aircraft,
-                                                  airothervector& ready_fighters) {
-        auto current_pos = getCurrentCoordinates();
-        for (const auto& [enemy_id, enemy_pos] : enemy_aircraft) {
-            double distance = calculateDistance(enemy_pos, current_pos);
-            // Находим ближайший подходящий истребитель
-            Aircraft* best_fighter = findBestFighter(ready_fighters, distance);
+            // Если нашли подходящий истребитель, выполняем атаку
             if (best_fighter) {
                 best_fighter->makeAttackRun(distance);
-
-                // Расход топлива и получение урона
                 best_fighter->setFuelCapacity(best_fighter->getFuelCapacity() -
                                               best_fighter->getFuelConsumption() * distance * 2);
                 best_fighter->receiveDamage(static_cast<int>(10 + distance * 0.1));
-                // Исключаем истребитель из доступного списка
-                ready_fighters.erase(
-                        std::remove(ready_fighters.begin(), ready_fighters.end(), best_fighter),
-                        ready_fighters.end()
-                );
             }
         }
-    }
-
-// ▎Функция 3: Нахождение лучшего истребителя для атаки
-    Aircraft* AviatorCruiser::findBestFighter(airothervector& ready_fighters, double distance) {
-        Aircraft* best_fighter = nullptr;
-        double best_efficiency = 0;
-
-        for (Aircraft* fighter : ready_fighters) {
-            if (distance <= fighter->getEffectiveAttackRadius()) {
-                double efficiency = (fighter->getDurability() / 100.0) *
-                                    (fighter->getFuelCapacity() / fighter->getFuelConsumption()) *
-                                    (1.0 - distance / fighter->getEffectiveAttackRadius());
-
-                // Проверяем, является ли текущий истребитель лучшим
-                if (efficiency > best_efficiency) {
-                    best_efficiency = efficiency;
-                    best_fighter = fighter;
-                }
-            }
-        }
-        return best_fighter;
     }
 
     ship::armvector AviatorCruiser::getArmament() const {
@@ -269,21 +210,6 @@ namespace acg {
     }
 
     void AviatorCruiser::fireAtShip(const ship::coordinate &target_coordinates) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         for (auto& weapon : armament) {
             if (weapon.getActive() && weapon.getType() == Armament::ArmamentType::LIGHT) {
                 auto current_pos = getCurrentCoordinates();
@@ -330,21 +256,6 @@ namespace acg {
     }
 
     void AviatorCruiser::fireAtAircraft(const ship::airvector &enemy_aircraft) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         for (auto &weapon: armament) {
             if (weapon.getActive() && weapon.getType() == Armament::ArmamentType::LIGHT) {
                 for (const auto &aircraft: enemy_aircraft) {
@@ -358,10 +269,6 @@ namespace acg {
             }
         }
 
-    }
-
-    void AviatorCruiser::move() {
-        Ship::move();
     }
 
     double AviatorCruiser::calculateTotalCost() const {

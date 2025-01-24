@@ -281,6 +281,131 @@ namespace acg {
         }
     }
 
+    // ? МОДЕЛИРОВАНИЕ НАЛЕТА (ОДНОПОТОЧНЫЙ _ МНОГОПОТОЧНЫЙ _ РЕЖИМЫ)
+
+
+    MissionError Mission::simulateAirRaid(const std::string& carrier_callsign,
+                                          const ship::coordinate& target_coordinates) {
+        if (carrier_callsign.empty()) return MissionError::EMPTY_CALLSIGN;
+
+        Ship* carrier_ship = shipGroupTable.getShip(carrier_callsign);
+        if (!carrier_ship) return MissionError::SHIP_NOT_FOUND;
+
+        // Проверяем тип корабля
+        Ship::shiptype ship_type = carrier_ship->getShipType();
+
+        auto* carrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                        dynamic_cast<IAircraftCarrier*>(carrier_ship) : nullptr;
+        auto* aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                        dynamic_cast<IAviatorCruiser*>(carrier_ship) : nullptr;
+
+        if (!carrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
+
+        // Получаем список самолетов атакующего корабля
+        ship::airvector attacking_aircraft;
+        if (carrier) {
+            attacking_aircraft = carrier->getAircrafts();
+            carrier->interceptorAttack(attacking_aircraft);
+            carrier->bomberAttack(target_coordinates); // Добавляем бомбардировку
+        } else {
+            attacking_aircraft = aviator->getAircrafts();
+            aviator->interceptorAttack(attacking_aircraft);
+            aviator->bomberAttack(target_coordinates); // Добавляем бомбардировку
+        }
+
+        // Ответный огонь от всех кораблей группы
+        auto iter = shipGroupTable.getIterator();
+        while (iter.hasNext()) {
+            auto [_, ship] = iter.get();
+            if (ship->getShipType() == Ship::shiptype::CRUISER) {
+                auto *defender = dynamic_cast<ICruiser *>(ship);
+                if (defender)
+                    defender->fireAtAircraft(attacking_aircraft);
+            }
+            if (ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
+                auto* defender = dynamic_cast<IAviatorCruiser*>(ship);
+                if (defender)
+                    defender->fireAtAircraft(attacking_aircraft);
+            }
+            iter.next();
+        }
+
+        return MissionError::SUCCESS;
+    }
+
+
+    MissionError Mission::MULTIsimulateAirRaid(const std::string& carrier_callsign,
+                                               const ship::coordinate& target_coordinates) {
+        if (carrier_callsign.empty()) return MissionError::EMPTY_CALLSIGN;
+        Ship* carrier_ship = shipGroupTable.getShip(carrier_callsign);
+        if (!carrier_ship) return MissionError::SHIP_NOT_FOUND;
+
+        Ship::shiptype ship_type = carrier_ship->getShipType();
+        auto* carrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                        dynamic_cast<IAircraftCarrier*>(carrier_ship) : nullptr;
+        auto* aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                        dynamic_cast<IAviatorCruiser*>(carrier_ship) : nullptr;
+        if (!carrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
+
+        ship::airvector attacking_aircraft;
+        std::mutex aircraft_mutex; // Мьютекс для защиты вектора самолётов
+
+        // Получаем список самолетов
+        if (carrier) {
+            attacking_aircraft = carrier->getAircrafts();
+        } else {
+            attacking_aircraft = aviator->getAircrafts();
+        }
+
+        // Создаем потоки для атаки истребителей и бомбардировщиков
+        std::thread interceptor_thread([&]() {
+            if (carrier) {
+                carrier->interceptorAttack(attacking_aircraft);
+            } else {
+                aviator->interceptorAttack(attacking_aircraft);
+            }
+        });
+
+        std::thread bomber_thread([&]() {
+            if (carrier) {
+                carrier->bomberAttack(target_coordinates);
+            } else {
+                aviator->bomberAttack(target_coordinates);
+            }
+        });
+
+        // Создаем вектор потоков для ответного огня
+        std::vector<std::thread> defense_threads;
+        auto iter = shipGroupTable.getIterator();
+        while (iter.hasNext()) {
+            auto [_, ship] = iter.get();
+            if (ship->getShipType() == Ship::shiptype::CRUISER ||
+                ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
+                defense_threads.emplace_back([&, ship]() {
+                    std::lock_guard<std::mutex> lock(aircraft_mutex);
+                    if (auto* defender = dynamic_cast<ICruiser*>(ship)) {
+                        defender->fireAtAircraft(attacking_aircraft);
+                    }
+                    if (auto* defender = dynamic_cast<IAviatorCruiser*>(ship)) {
+                        defender->fireAtAircraft(attacking_aircraft);
+                    }
+                });
+            }
+            iter.next();
+        }
+
+        // Ожидаем завершения всех потоков
+        interceptor_thread.join();
+        bomber_thread.join();
+        for (auto& thread : defense_threads) {
+            thread.join();
+        }
+
+        return MissionError::SUCCESS;
+    }
+
+
+
 
     // * Конструкторы
 

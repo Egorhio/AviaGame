@@ -143,12 +143,10 @@ namespace acg {
         if (!active || current_ammo <= 0) {
             return;
         }
-
         static int shoot_count = 0;
         int max_shoots_per_second = static_cast<int>(rate_of_fire);
-
         shoot_count++;
-        if (shoot_count >= max_shoots_per_second) {
+        if (shoot_count <= max_shoots_per_second) {
             current_ammo--;
             shoot_count = 0;
         }

@@ -153,15 +153,15 @@ namespace acg {
     }
 
     void Ship::move() {
-        auto destination = getDestinationCoordinates();
-        double distance = calculateDistance(destination, getCurrentCoordinates());
+        auto destination = destination_coordinates;
+        double distance = calculateDistance(destination, destination_coordinates);
         if (distance > speed) {
             double ratio = speed / distance;
             ship::coordinate new_pos = {
-                    getCurrentCoordinates().first +
-                    (destination.first - getCurrentCoordinates().first) * ratio,
-                    getCurrentCoordinates().second +
-                    (destination.second - getCurrentCoordinates().second) * ratio
+                    current_coordinates.first +
+                    (destination.first - current_coordinates.first) * ratio,
+                    current_coordinates.second +
+                    (destination.second - current_coordinates.second) * ratio
             };
             setCurrentCoordinates(new_pos);
         } else {
@@ -185,5 +185,7 @@ namespace acg {
                 std::pow(target_coordinates.second - current_pos.second, 2)
         );
     }
+
+
 
 } // namespace acg

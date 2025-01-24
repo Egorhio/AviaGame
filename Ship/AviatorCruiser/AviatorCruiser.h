@@ -205,11 +205,6 @@ namespace acg {
          */
 
         /**
-         * @brief Переместить корабль в точку назначения.
-         */
-        void move() override;
-
-        /**
          * @brief Рассчитать полную стоимость корабля.
          * @return Общая стоимость.
          */
@@ -221,42 +216,6 @@ namespace acg {
          */
         void setDestination(const ship::coordinate &new_destination) override;
 
-        /** @} */
-
-        /**
-         * @name Вспомогательные методы
-         * @{
-         */
-
-        /**
-         * @brief Выполнить волны атак бомбардировщиков.
-         * @param available_bombers Доступные бомбардировщики.
-         * @param distance Дистанция до цели.
-         */
-        static void executeAttackWaves(airothervector &available_bombers, double distance);
-
-        /**
-         * @brief Получить список готовых к бою истребителей.
-         * @return Вектор указателей на готовые истребители.
-         */
-        airothervector getReadyFighters();
-
-        /**
-         * @brief Назначить цели истребителям.
-         * @param enemy_aircraft Вражеские самолёты.
-         * @param ready_fighters Готовые истребители.
-         */
-        void assignTargetsToFighters(const ship::airvector &enemy_aircraft, airothervector &ready_fighters);
-
-        /**
-         * @brief Найти лучший истребитель для атаки.
-         * @param ready_fighters Список готовых истребителей.
-         * @param distance Дистанция до цели.
-         * @return Указатель на выбранный истребитель.
-         */
-        static Aircraft *findBestFighter(airothervector &ready_fighters, double distance);
-
-        /** @} */
     };
 
 } // namespace acg

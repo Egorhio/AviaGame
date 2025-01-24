@@ -147,25 +147,27 @@ namespace acg {
         double condition_factor = durability / 100.0;
         damage = static_cast<int>(damage * condition_factor);
 
-        // Расход топлива при атаке
-        double fuel_spent = distance * fuel_consumption * (1.0 + (1.0 - condition_factor) * 0.3);
+        // Расход топлива при атаке (с учетом расстояния туда и обратно)
+        double fuel_spent = distance * 2 * fuel_consumption * (1.0 + (1.0 - condition_factor) * 0.3);
+
+        // Проверяем достаточность топлива до выполнения операции
+        if (fuel_capacity < fuel_spent) {
+            active = false;
+            return;
+        }
+
+        // Уменьшаем топливо
+        fuel_capacity -= fuel_spent;
 
         // Износ от выполнения боевой задачи
         durability -= static_cast<int>(distance * 0.1);
 
         // Небольшое снижение стоимости от износа
-        cost *= (1.0 - 0.01); // Уменьшение на 1% за вылет
-
-        if (fuel_capacity >= fuel_spent) {
-            fuel_capacity -= fuel_spent;
-        } else {
-            active = false;
-            return;
-        }
+        cost *= (1.0 - 0.01);
 
         // Проверка на критическое состояние
         if (durability <= 20) {
-            speed *= 0.8; // Снижение скорости при критических повреждениях
+            speed *= 0.8;
         }
     }
 

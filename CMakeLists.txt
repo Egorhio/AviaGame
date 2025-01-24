@@ -119,3 +119,6 @@ add_executable(MeasuringTimeRaid
         Mission/MeasuringSpeedWorkMethod.cpp
 )
 
+
+
+
