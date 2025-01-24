@@ -13,7 +13,7 @@ namespace acg {
         max_aircraft_capacity = max_cap;
     }
 
-    std::optional<ship::airvector> AircraftCarrier::getAircrafts() const {
+    ship::airvector AircraftCarrier::getAircrafts() const {
         return aircrafts;
     }
 
@@ -26,159 +26,73 @@ namespace acg {
     }
 
     void AircraftCarrier::bomberAttack(const ship::coordinate& target_coordinates) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
-        // Существующая логика...
         if (aircrafts.empty()) return;
-        auto current_pos = getCurrentCoordinates();
+
+        auto current_pos = current_coordinates;
+        double distance = calculateDistance(target_coordinates, current_pos);
+
+        const int AIRCRAFT_PER_WAVE = 3;
         airothervector available_bombers;
-        for (auto &[aircraft, aircraft_pos]: aircrafts) {
+
+        // Собираем доступные бомбардировщики
+        for (auto &[aircraft, _]: aircrafts) {
             if (aircraft.getType() == Aircraft::AircraftType::ATTACK &&
                 aircraft.getActive() &&
-                aircraft.getDurability() > 20) {
+                aircraft.getDurability() > 1 &&
+                distance <= aircraft.getAttackRadius()) {
                 available_bombers.push_back(&aircraft);
             }
         }
 
         if (available_bombers.empty()) return;
 
-        double distance = calculateDistance(target_coordinates, current_pos);
-        executeAttackWaves(available_bombers, distance);
-    }
+        // Выполняем атаку волнами
+        size_t waves = available_bombers.size() / AIRCRAFT_PER_WAVE;
+        for (int i = 0; i < waves * AIRCRAFT_PER_WAVE; i++) {
+            Aircraft* bomber = available_bombers[i];
+            int wave = i / AIRCRAFT_PER_WAVE;
 
-    void AircraftCarrier::executeAttackWaves(airothervector& available_bombers, double distance) {
-        const int AIRCRAFT_PER_WAVE = 3;
-        int waves = static_cast<int>(available_bombers.size()) / AIRCRAFT_PER_WAVE;
-        for (int wave = 0; wave < waves; ++wave) {
-            double wave_damage_multiplier = 1.0 - (0.1 * wave); // уменьшение эффективности каждой следующей волны
-            for (int i = 0; i < AIRCRAFT_PER_WAVE; ++i) {
-                Aircraft* bomber = available_bombers[wave * AIRCRAFT_PER_WAVE + i];
-                if (distance <= bomber->getAttackRadius()) {
-                    bomber->makeAttackRun(distance);
-                    int base_damage = bomber->getDamage();
+            bomber->makeAttackRun(distance);
 
-                    double distance_factor = 1.0 - (distance / bomber->getAttackRadius());
-                    double durability_factor = bomber->getDurability() / 100.0;
-                    double final_multiplier = wave_damage_multiplier * distance_factor * durability_factor;
+            // Расчет итогового урона
+            double wave_penalty = 1.0 - (0.1 * wave);
+            double distance_factor = 1.0 - (distance / bomber->getAttackRadius());
+            double durability_factor = bomber->getDurability() / 100.0;
+            int final_damage = static_cast<int>(bomber->getDamage() *
+                                                wave_penalty *
+                                                distance_factor *
+                                                durability_factor);
 
-                    int final_damage = static_cast<int>(base_damage * final_multiplier);
-
-                    if (final_damage > 0) {
-                        int wear = static_cast<int>(final_damage * 0.1 * (1 + distance / bomber->getAttackRadius()));
-                        bomber->receiveDamage(wear);
-                        bomber->setFuelCapacity(bomber->getFuelCapacity() - bomber->getFuelConsumption() * distance * 2); // туда и обратно
-                    }
-                }
+            // Применение износа и расхода топлива
+            if (final_damage > 0) {
+                int wear = static_cast<int>(final_damage * 0.1 * (1 + distance / bomber->getAttackRadius()));
+                bomber->receiveDamage(wear);
+                bomber->setFuelCapacity(bomber->getFuelCapacity() -
+                                        bomber->getFuelConsumption() * distance * 2);
             }
         }
     }
-
-
 
     void AircraftCarrier::interceptorAttack(const ship::airvector& enemy_aircraft) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 1; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
-        // Существующая логика...
         if (aircrafts.empty()) return;
-        auto ready_fighters = getReadyFighters();
-        if (ready_fighters.empty()) return;
-        assignTargetsToFighters(enemy_aircraft, ready_fighters);
-
-    }
-
-// ▎Функция 1: Получение списка готовых истребителей
-    airothervector AircraftCarrier::getReadyFighters() {
-        airothervector ready_fighters;
-        // Группируем истребители, которые готовы к атаке
+        auto current_pos = current_coordinates;
         for (auto& [aircraft, pos] : aircrafts) {
             if (aircraft.getType() == Aircraft::AircraftType::FIGHTER &&
-                aircraft.getActive() &&
-                aircraft.getDurability() > 30 &&
-                aircraft.getFuelCapacity() > aircraft.getFuelConsumption() * 100) {
-                ready_fighters.push_back(&aircraft);
-            }
-        }
-        return ready_fighters;
-    }
-
-// ▎Функция 2: Распределение целей между истребителями
-    void AircraftCarrier::assignTargetsToFighters(const ship::airvector& enemy_aircraft,
-                                                  airothervector& ready_fighters) {
-        auto current_pos = getCurrentCoordinates();
-        for (const auto& [enemy_id, enemy_pos] : enemy_aircraft) {
-            double distance = calculateDistance(enemy_pos, current_pos);
-            // Находим ближайший подходящий истребитель
-            Aircraft* best_fighter = findBestFighter(ready_fighters, distance);
-            if (best_fighter) {
-                best_fighter->makeAttackRun(distance);
-
-                // Расход топлива и получение урона
-                best_fighter->setFuelCapacity(best_fighter->getFuelCapacity() -
-                                              best_fighter->getFuelConsumption() * distance * 2);
-                best_fighter->receiveDamage(static_cast<int>(10 + distance * 0.1));
-                // Исключаем истребитель из доступного списка
-                ready_fighters.erase(
-                        std::remove(ready_fighters.begin(), ready_fighters.end(), best_fighter),
-                        ready_fighters.end()
-                );
-            }
-        }
-    }
-
-// ▎Функция 3: Нахождение лучшего истребителя для атаки
-    Aircraft* AircraftCarrier::findBestFighter(const airothervector& ready_fighters, double distance) {
-        Aircraft* best_fighter = nullptr;
-        double best_efficiency = 0;
-
-        for (Aircraft* fighter : ready_fighters) {
-            if (distance <= fighter->getEffectiveAttackRadius()) {
-                double efficiency = (fighter->getDurability() / 100.0) *
-                                    (fighter->getFuelCapacity() / fighter->getFuelConsumption()) *
-                                    (1.0 - distance / fighter->getEffectiveAttackRadius());
-
-                // Проверяем, является ли текущий истребитель лучшим
-                if (efficiency > best_efficiency) {
-                    best_efficiency = efficiency;
-                    best_fighter = fighter;
+                aircraft.getActive()) {
+                for (const auto& [enemy_id, enemy_pos] : enemy_aircraft) {
+                    double distance = calculateDistance(enemy_pos, current_pos);
+                    aircraft.makeAttackRun(distance);
+                    break; // Каждый истребитель атакует только одну цель
                 }
             }
         }
-        return best_fighter;
     }
 
     [[nodiscard]] double AircraftCarrier::calculateTotalCost() const {
         double total_cost = getCost(); // Базовая стоимость корабля
-
         for (const auto& [aircraft, _] : aircrafts) {
             total_cost += aircraft.getCost();
         }
-
         // Учитываем состояние корабля
         double durability_factor = static_cast<double>(getDurability()) / 100.0;
         total_cost *= durability_factor;
@@ -187,29 +101,14 @@ namespace acg {
     }
 
     void AircraftCarrier::setDestination(const ship::coordinate& new_destination) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         double distance = calculateDistance(new_destination, getCurrentCoordinates());
-        if (distance > getSpeed() * 8) {
-            double ratio = (getSpeed() * 8) / distance;
+        if (distance > speed * 8) {
+            double ratio = (speed * 8) / distance;
             ship::coordinate adjusted_destination = {
-                    getCurrentCoordinates().first +
-                    (new_destination.first - getCurrentCoordinates().first) * ratio,
-                    getCurrentCoordinates().second +
-                    (new_destination.second - getCurrentCoordinates().second) * ratio
+                    current_coordinates.first +
+                    (new_destination.first - current_coordinates.first) * ratio,
+                    current_coordinates.second +
+                    (new_destination.second - current_coordinates.second) * ratio
             };
             setDestinationCoordinates(adjusted_destination);
         } else {
@@ -219,36 +118,19 @@ namespace acg {
     }
 
     void AircraftCarrier::move() {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 1; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         auto destination = getDestinationCoordinates();
-        if (!destination.has_value()) return;
-
-        double distance = calculateDistance(destination.value(), getCurrentCoordinates());
-        if (distance > getSpeed()) {
-            double ratio = getSpeed() / distance;
+        double distance = calculateDistance(destination, getCurrentCoordinates());
+        if (distance > speed) {
+            double ratio = speed / distance;
             ship::coordinate new_pos = {
                     getCurrentCoordinates().first +
-                    (destination.value().first - getCurrentCoordinates().first) * ratio,
+                    (destination.first - getCurrentCoordinates().first) * ratio,
                     getCurrentCoordinates().second +
-                    (destination.value().second - getCurrentCoordinates().second) * ratio
+                    (destination.second - getCurrentCoordinates().second) * ratio
             };
             setCurrentCoordinates(new_pos);
         } else {
-            setCurrentCoordinates(destination.value());
+            setCurrentCoordinates(destination);
         }
     }
 

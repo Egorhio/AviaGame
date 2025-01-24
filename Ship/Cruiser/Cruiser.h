@@ -26,7 +26,7 @@ namespace acg {
          * @brief Получить текущее вооружение крейсера
          * @return std::optional с вектором вооружения
          */
-        [[nodiscard]] std::optional<ship::armvector> getArmament() const override;
+        [[nodiscard]] ship::armvector getArmament() const override;
 
         /**
          * @brief Изменить вооружение крейсера
@@ -40,7 +40,7 @@ namespace acg {
          * @param ammo_name Название боеприпасов
          * @return std::optional с информацией о боеприпасах
          */
-        [[nodiscard]] std::optional<ship::AmmoInfo> getAmmoInfo(const std::string &ammo_name) const;
+        [[nodiscard]] ship::AmmoInfo getAmmoInfo(const std::string &ammo_name) const;
 
         /**
          * @brief Изменить информацию о боеприпасах

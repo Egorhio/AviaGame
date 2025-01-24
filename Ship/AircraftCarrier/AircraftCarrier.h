@@ -56,7 +56,7 @@ namespace acg {
          * @brief Получить информацию о самолетах на борту
          * @return Опциональный вектор самолетов
          */
-        [[nodiscard]] std::optional<ship::airvector> getAircrafts() const override;
+        [[nodiscard]] ship::airvector getAircrafts() const override;
 
         /**
          * @brief Обновить список самолетов
@@ -76,34 +76,6 @@ namespace acg {
          * @param enemy_aircraft Вектор вражеских самолетов
          */
         void interceptorAttack(const ship::airvector& enemy_aircraft) override;
-
-        /**
-         * @brief Выполнить волны атак бомбардировщиков
-         * @param available_bombers Доступные бомбардировщики
-         * @param distance Дистанция до цели
-         */
-        static void executeAttackWaves(airothervector &available_bombers, double distance);
-
-        /**
-         * @brief Получить список готовых к бою истребителей
-         * @return Вектор указателей на готовые истребители
-         */
-        airothervector getReadyFighters();
-
-        /**
-         * @brief Назначить цели истребителям
-         * @param enemy_aircraft Вражеские самолеты
-         * @param ready_fighters Готовые истребители
-         */
-        void assignTargetsToFighters(const ship::airvector &enemy_aircraft, airothervector &ready_fighters);
-
-        /**
-         * @brief Найти лучший истребитель для атаки
-         * @param ready_fighters Список готовых истребителей
-         * @param distance Дистанция до цели
-         * @return Указатель на выбранный истребитель
-         */
-        static Aircraft* findBestFighter(const airothervector &ready_fighters, double distance);
 
         /**
          * @brief Рассчитать общую стоимость авианосца

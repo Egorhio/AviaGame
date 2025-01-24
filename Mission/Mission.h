@@ -24,7 +24,6 @@ namespace acg {
         AIRCRAFT_NOT_FOUND,     ///< Самолет не найден
         WEAPON_NOT_FOUND,       ///< Оружие не найдено
         STORAGE_FULL,           ///< Хранилище заполнено
-        VOID_LIST               ///< Пустой список
     };
 
     /**

@@ -25,10 +25,11 @@ set(SOURCES
         Ship/AircraftCarrier/AircraftCarrier.h
         Ship/AircraftCarrier/AircraftCarrier-Interface.h
         Ship/Cruiser/Cruiser-Interface.h
+        Ship/AviatorCruiser/AviatorCruiser-Interface.h
 )
 
 add_executable(3 ${SOURCES} main.cpp
-        Ship/AviatorCruiser/AviatorCruiser-Interface.h)
+        )
 
 add_executable(project
         ${SOURCES}
@@ -79,11 +80,36 @@ add_executable(Tabletests
         Table-template/TableTests.cpp
 )
 
+add_executable(Shiptests
+        ${SOURCES}
+        Ship/ShipTests.cpp
+)
+
+add_executable(Cruisertests
+        ${SOURCES}
+        Ship/Cruiser/CruiserTests.cpp
+)
+
+add_executable(AircraftCarriertests
+        ${SOURCES}
+        Ship/AircraftCarrier/AircraftCarrierTests.cpp
+)
+
+add_executable(AviatorCruisertests
+        ${SOURCES}
+        Ship/AviatorCruiser/AviatorCruiserTests.cpp
+)
+
 # Привязываем GoogleTest к тестовым исполняемым файлам
 target_link_libraries(Misiiontests gtest gtest_main)
 target_link_libraries(Aircrafttests gtest gtest_main)
 target_link_libraries(Armamenttests gtest gtest_main)
 target_link_libraries(Tabletests gtest gtest_main)
+target_link_libraries(Shiptests gtest gtest_main)
+target_link_libraries(Cruisertests gtest gtest_main)
+target_link_libraries(AircraftCarriertests gtest gtest_main)
+target_link_libraries(AviatorCruisertests gtest gtest_main)
+
 
 # Регистрируем тесты
 add_test(NAME all_tests COMMAND tests)

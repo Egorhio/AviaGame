@@ -79,7 +79,7 @@ namespace acg {
          * @brief Получить текущее вооружение.
          * @return std::optional с вектором вооружения.
          */
-        [[nodiscard]] std::optional<ship::armvector> getArmament() const override;
+        [[nodiscard]] ship::armvector getArmament() const override;
 
         /**
          * @brief Модифицировать вооружение корабля.
@@ -93,7 +93,7 @@ namespace acg {
          * @param ammo_name Название боеприпасов.
          * @return std::optional с информацией о боеприпасах.
          */
-        [[nodiscard]] std::optional<ship::AmmoInfo> getAmmoInfo(const std::string &ammo_name) const;
+        [[nodiscard]] ship::AmmoInfo getAmmoInfo(const std::string &ammo_name) const;
 
         /**
          * @brief Модифицировать информацию о боеприпасах.
@@ -176,7 +176,7 @@ namespace acg {
          * @brief Получить информацию о самолётах.
          * @return std::optional с вектором самолётов.
          */
-        [[nodiscard]] std::optional<ship::airvector> getAircrafts() const override;
+        [[nodiscard]] ship::airvector getAircrafts() const override;
 
         /**
          * @brief Модифицировать информацию о самолётах.

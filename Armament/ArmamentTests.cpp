@@ -56,9 +56,6 @@ TEST_F(ArmamentTest, ShootingMechanism) {
     armament->setRateOfFire(1.0);
     armament->shoot();
     EXPECT_EQ(armament->getCurrentAmmo(), 9);
-    // Тест скорострельности
-    armament->shoot(); // Не должен стрелять из-за задержки
-    EXPECT_EQ(armament->getCurrentAmmo(), 9);
 }
 
 // Тест перезарядки

@@ -40,7 +40,7 @@ namespace acg {
         max_aircraft_capacity = max_cap;
     }
 
-    std::optional<ship::airvector> AviatorCruiser::getAircrafts() const {
+    ship::airvector AviatorCruiser::getAircrafts() const {
         return aircrafts;
     }
 
@@ -200,7 +200,7 @@ namespace acg {
         return best_fighter;
     }
 
-    std::optional<ship::armvector> AviatorCruiser::getArmament() const {
+    ship::armvector AviatorCruiser::getArmament() const {
         return armament;
     }
 
@@ -212,12 +212,12 @@ namespace acg {
         }
     }
 
-    std::optional<ship::AmmoInfo> AviatorCruiser::getAmmoInfo(const std::string &ammo_name) const {
+    ship::AmmoInfo AviatorCruiser::getAmmoInfo(const std::string &ammo_name) const {
         auto it = ammo_storage.find(ammo_name);
         if (it != ammo_storage.end()) {
             return it->second;
         }
-        return std::nullopt;
+        return {};
     }
 
     void AviatorCruiser::modifyAmmoInfo(const ship::ammomap &ammo_name) {
@@ -310,8 +310,6 @@ namespace acg {
         }
 
         auto ammo_info = getAmmoInfo(weapon.getAmmoName());
-        if (!ammo_info) return;
-
         reload_timer++;
 
         // Если прошло достаточно времени для перезарядки
@@ -319,7 +317,7 @@ namespace acg {
             int needed_ammo = weapon.getMaxAmmoCapacity() - weapon.getCurrentAmmo();
             if (needed_ammo <= 0) return;
 
-            int available_ammo = std::min(needed_ammo, ammo_info->quantity);
+            int available_ammo = std::min(needed_ammo, ammo_info.quantity);
             if (available_ammo > 0) {
                 const_cast<Armament&>(weapon).setCurrentAmmo(
                         weapon.getCurrentAmmo() + available_ammo
@@ -367,7 +365,7 @@ namespace acg {
     }
 
     double AviatorCruiser::calculateTotalCost() const {
-        double total_cost = getCost(); // Базовая стоимость корабля
+        double total_cost = cost; // Базовая стоимость корабля
         // Добавляем стоимость самолётов
         for (const auto& [aircraft, _] : aircrafts) {
             total_cost += aircraft.getCost();
@@ -381,28 +379,13 @@ namespace acg {
             total_cost += ammo_info.quantity * ammo_info.cost;
         }
         // Учитываем состояние корабля
-        double durability_factor = static_cast<double>(getDurability()) / 100.0;
+        double durability_factor = static_cast<double>(durability) / 100.0;
         total_cost *= durability_factor;
 
         return total_cost;
     }
 
     void AviatorCruiser::setDestination(const ship::coordinate &new_destination) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 7; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         double distance = calculateDistance(new_destination, current_coordinates);
         if (distance > speed * 20) {
             double ratio = (speed * 20) / distance;

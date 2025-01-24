@@ -95,7 +95,7 @@ namespace acg {
         current_coordinates = coordinates;
     }
 
-    std::optional<ship::coordinate> Ship::getDestinationCoordinates() const {
+    ship::coordinate Ship::getDestinationCoordinates() const {
         return destination_coordinates; // Если пусто, вернет std::nullopt
     }
 
@@ -153,36 +153,19 @@ namespace acg {
     }
 
     void Ship::move() {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 2; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         auto destination = getDestinationCoordinates();
-        if (!destination.has_value()) return;
-
-        double distance = calculateDistance(destination.value(), getCurrentCoordinates());
-        if (distance > getSpeed()) {
-            double ratio = getSpeed() / distance;
+        double distance = calculateDistance(destination, getCurrentCoordinates());
+        if (distance > speed) {
+            double ratio = speed / distance;
             ship::coordinate new_pos = {
                     getCurrentCoordinates().first +
-                    (destination.value().first - getCurrentCoordinates().first) * ratio,
+                    (destination.first - getCurrentCoordinates().first) * ratio,
                     getCurrentCoordinates().second +
-                    (destination.value().second - getCurrentCoordinates().second) * ratio
+                    (destination.second - getCurrentCoordinates().second) * ratio
             };
             setCurrentCoordinates(new_pos);
         } else {
-            setCurrentCoordinates(destination.value());
+            setCurrentCoordinates(destination);
         }
     }
 
@@ -202,7 +185,5 @@ namespace acg {
                 std::pow(target_coordinates.second - current_pos.second, 2)
         );
     }
-
-
 
 } // namespace acg

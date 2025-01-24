@@ -2,7 +2,7 @@
 
 namespace acg {
 
-    std::optional<ship::armvector> Cruiser::getArmament() const {
+    ship::armvector Cruiser::getArmament() const {
         return armament;
     }
 
@@ -14,12 +14,12 @@ namespace acg {
         }
     }
 
-    std::optional<ship::AmmoInfo> Cruiser::getAmmoInfo(const std::string &ammo_name) const {
+    ship::AmmoInfo Cruiser::getAmmoInfo(const std::string &ammo_name) const {
         auto it = ammo_storage.find(ammo_name);
         if (it != ammo_storage.end()) {
             return it->second;
         }
-        return std::nullopt;
+        return {};
     }
 
     void Cruiser::modifyAmmoInfo(const ship::ammomap &new_ammo) {
@@ -66,31 +66,20 @@ namespace acg {
     }
 
     void Cruiser::fireAtShip(const ship::coordinate &target_coordinates) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 1; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         for (auto& weapon : armament) {
             if (weapon.getActive()) {
-                auto current_pos = getCurrentCoordinates();
+                auto current_pos = current_coordinates;
                 double distance = calculateDistance(target_coordinates, current_pos);
                 if (distance <= weapon.getRangeOfFire()) {
+                    // Проверяем наличие патронов
+                    if (weapon.getCurrentAmmo() <= 0) {
+                        // Если патронов нет, пытаемся перезарядить
+                        reloadWeapon(weapon);
+                    }
                     weapon.shoot();
                 }
             }
         }
-
     }
 
     void Cruiser::reloadWeapon(const Armament &weapon) {
@@ -100,7 +89,7 @@ namespace acg {
 
         // Проверяем наличие боеприпасов до начала перезарядки
         auto ammo_info = getAmmoInfo(weapon.getAmmoName());
-        if (!ammo_info || ammo_info->quantity <= 0) {
+        if (ammo_info.quantity <= 0) {
             return;
         }
 
@@ -116,7 +105,7 @@ namespace acg {
             if (needed_ammo <= 0) {
                 return;
             }
-            int available_ammo = std::min(needed_ammo, ammo_info->quantity);
+            int available_ammo = std::min(needed_ammo, ammo_info.quantity);
             if (available_ammo > 0) {
                 const_cast<Armament&>(weapon).setCurrentAmmo(
                         weapon.getCurrentAmmo() + available_ammo
@@ -128,21 +117,6 @@ namespace acg {
     }
 
     void Cruiser::fireAtAircraft(const ship::airvector &enemy_aircraft) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 2; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         for (auto &weapon: armament) {
             if (weapon.getActive()) {
                 for (const auto &aircraft: enemy_aircraft) {
@@ -155,14 +129,11 @@ namespace acg {
                 }
             }
         }
-
     }
-
-
 
     // Рассчитать суммарную стоимость корабля, учитывая стоимость вооружения и боеприпасов
     double Cruiser::calculateTotalCost() const {
-        double total_cost = getCost(); // Базовая стоимость корабля
+        double total_cost = cost; // Базовая стоимость корабля
         // Добавляем стоимость вооружения
         for (const auto& weapon : armament) {
             total_cost += weapon.getCost();
@@ -180,21 +151,6 @@ namespace acg {
 
 // Установить новую точку назначения для крейсера
     void Cruiser::setDestination(const ship::coordinate &new_destination) {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 5; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         double distance = calculateDistance(new_destination, current_coordinates);
         if (distance > speed * 10) {
             double ratio = (speed * 10) / distance;
@@ -209,21 +165,6 @@ namespace acg {
     }
 
     void Cruiser::move() {
-        // Используем статическую переменную для отслеживания количества вызовов
-        static int move_call_count = 0;
-        const int move_interval_calls = 4; // Интервал обновления движения в количестве вызовов
-
-        // Увеличиваем счетчик вызовов
-        move_call_count++;
-
-        // Если количество вызовов меньше интервала, выходим
-        if (move_call_count < move_interval_calls) {
-            return;
-        }
-
-        // Сбрасываем счетчик после достижения интервала
-        move_call_count = 0;
-
         double distance = calculateDistance(destination_coordinates, current_coordinates);
         if (distance > speed) {
             double ratio = speed / distance;

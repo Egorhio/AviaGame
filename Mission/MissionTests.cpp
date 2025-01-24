@@ -204,14 +204,14 @@ TEST_F(MissionTransferTest, TransferPlaneSuccess) {
     // Проверяем, что самолёт действительно есть на исходном корабле
     ASSERT_TRUE(fromCarrier != nullptr);
     ASSERT_TRUE(fromCarrier->getShipType() == acg::Ship::shiptype::AIRCRAFTCARRIER);
-    ASSERT_TRUE(fromCarrier->getAircrafts().has_value());
+    ASSERT_TRUE(!(fromCarrier->getAircrafts().empty()));
 
     // Выполняем перемещение
     EXPECT_EQ(mission->transferPlane(aircraft, "FROM_CARRIER", "TO_CARRIER"),
               acg::MissionError::SUCCESS);
 
     ASSERT_TRUE(toCarrier != nullptr);
-    ASSERT_TRUE(toCarrier->getAircrafts().has_value());
+    ASSERT_TRUE(!(toCarrier->getAircrafts().empty()));
 }
 
 TEST_F(MissionTransferTest, TransferPlaneEmptyCallsign) {
@@ -319,8 +319,7 @@ TEST_F(MissionWeaponTest, BuyWeaponSuccess) {
               acg::MissionError::SUCCESS);
     // Проверяем, что оружие добавлено
     auto armament = cruiser->getArmament();
-    EXPECT_TRUE(armament.has_value());
-    EXPECT_EQ(armament.value().size(), 1);
+    EXPECT_EQ(armament.size(), 1);
 }
 
 TEST_F(MissionWeaponTest, BuyWeaponStorageFull) {

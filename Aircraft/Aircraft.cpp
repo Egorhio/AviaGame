@@ -160,6 +160,7 @@ namespace acg {
             fuel_capacity -= fuel_spent;
         } else {
             active = false;
+            return;
         }
 
         // Проверка на критическое состояние

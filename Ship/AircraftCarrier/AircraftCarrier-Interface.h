@@ -39,7 +39,7 @@ namespace acg {
 
         virtual void modifyAircrafts(const ship::airvector& updated_aircrafts) = 0;
 
-        [[nodiscard]] virtual std::optional<ship::airvector> getAircrafts() const = 0;
+        [[nodiscard]] virtual ship::airvector getAircrafts() const = 0;
 
         [[nodiscard]] virtual int getMaxAircraftCapacity() const = 0;
     };

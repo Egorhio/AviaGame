@@ -143,19 +143,14 @@ namespace acg {
         if (!active || current_ammo <= 0) {
             return;
         }
-        // Используем статические переменные
-        static bool first_shoot = true;
-        static int shoot_count = 0;
 
-        // Рассчитываем количество выстрелов, которое можно сделать в секунду
+        static int shoot_count = 0;
         int max_shoots_per_second = static_cast<int>(rate_of_fire);
 
-        if (first_shoot || shoot_count >= max_shoots_per_second) {
+        shoot_count++;
+        if (shoot_count >= max_shoots_per_second) {
             current_ammo--;
-            shoot_count = 0;  // Сбрасываем счетчик после выстрела
-            first_shoot = false;
-        } else {
-            shoot_count++;
+            shoot_count = 0;
         }
     }
 

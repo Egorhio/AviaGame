@@ -11,7 +11,6 @@
 #include <vector>
 #include <map>
 #include <valarray>
-#include <optional>
 
 namespace acg {
 

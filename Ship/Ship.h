@@ -160,7 +160,7 @@ namespace acg {
          * @brief Получает координаты точки назначения корабля
          * @return Координаты точки назначения (если заданы)
          */
-        [[nodiscard]] std::optional<ship::coordinate> getDestinationCoordinates() const;
+        [[nodiscard]] ship::coordinate getDestinationCoordinates() const;
 
         /**
          * @brief Устанавливает координаты точки назначения корабля

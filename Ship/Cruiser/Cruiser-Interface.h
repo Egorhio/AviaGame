@@ -53,7 +53,7 @@ namespace acg {
          *         nullopt если вооружение отсутствует
          * @nodiscard указывает, что возвращаемое значение не должно игнорироваться
          */
-        [[nodiscard]] virtual std::optional<ship::armvector> getArmament() const = 0;
+        [[nodiscard]] virtual ship::armvector getArmament() const = 0;
 
         /**
          * @brief Изменить вооружение корабля
