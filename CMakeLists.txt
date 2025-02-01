@@ -44,14 +44,10 @@ set(ADDITIONAL
         ../1/additional.cpp
 )
 
-add_executable(main-game ${SOURCES} ${ADDING} ${ADDITIONAL}
-        main.cpp
-        Game/main-game.h
-)
-
 add_executable(Game ${SOURCES} ${ADDING} ${ADDITIONAL}
         Game/main-game.cpp
         Game/main-game.h
+        main.cpp
 )
 
 # Для работы с FetchContent
@@ -115,7 +111,7 @@ add_executable(AviatorCruisertests
 )
 
 # Привязываем GoogleTest к тестовым исполняемым файлам
-target_link_libraries(Misiiontests gtest gtest_main)
+
 target_link_libraries(Aircrafttests gtest gtest_main)
 target_link_libraries(Armamenttests gtest gtest_main)
 target_link_libraries(Tabletests gtest gtest_main)
@@ -141,8 +137,16 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(json)
 
 # Добавьте в target_link_libraries для ваших исполняемых файлов
-target_link_libraries(main-game PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(Game PRIVATE nlohmann_json::nlohmann_json)
+#target_link_libraries(Misiiontests gtest gtest_main)
+target_link_libraries(Misiiontests
+        PRIVATE
+        gtest
+        gtest_main
+        nlohmann_json::nlohmann_json
+)
+
+
 
 
 

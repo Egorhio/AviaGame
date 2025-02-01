@@ -8,13 +8,11 @@ namespace acg {
     public:
         static void showMainMenu(Mission* mission) ;
         static bool showNewGameMenu(Mission* mission) ;
-//        void showShipManagement() const;
-//        void showAircraftManagement() const;
-//        void showCombatSimulation() const;
-//        void showMissionStatus() const;
-//        void updateMissionInfo() const;  // Новый метод
         static void showAdditionalSettings(Mission* mission) ;
     };
+
+    void displayAnimatedTextGame(const std::string& text);
+
 
 } // acg
 

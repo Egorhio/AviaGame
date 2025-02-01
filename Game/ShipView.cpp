@@ -25,14 +25,18 @@ namespace acg {
             std::cout << "2. Продать/Купить оружие для судна\n";
             std::cout << "3. Продать/Купить самолёты для судна\n";
             std::cout << "4. Имеющийся ассортимент всего сейчас\n";
+            std::cout << "5. Перевести самолёт с одного корабля на другой\n";
             std::cout << "0. Начать игру\n";
             std::cout << "Бюджет: " << mission->getRemainingBudget() << "\n";
             std::cout << "Выберите действие: ";
 
-            int choice = getNumber(0, 4);
+            int choice = getNumber(0, 5);
             MissionError result = MissionError::INVALID_SHIP_TYPE;
 
             switch (choice) {
+                case 5:
+                    showTransferMenu(mission);
+                    break;
                 case 4: {
                     if (!(mission->getShipGroupTable().getShipCount())) {
                         std::cout << "У вас нет кораблей\n";
@@ -149,6 +153,87 @@ namespace acg {
                 default:
                     std::cout << "Неизвестная ошибка\n";
             }
+        }
+    }
+
+    void showTransferMenu(Mission* mission) {
+        if (mission->getShipGroupTable().getShipCount() < 2) {
+            std::cout << "Для перевода самолётов необходимо минимум 2 корабля\n";
+            return;
+        }
+
+        // Показываем список кораблей с авиацией
+        auto iter = mission->getShipGroupTable().getIterator();
+        std::vector<std::pair<std::string, Ship*>> aviationShips;
+
+        while(iter.hasNext()) {
+            auto [callSign, ship] = iter.get();
+            if (ship->getShipType() == Ship::shiptype::AIRCRAFTCARRIER ||
+                ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
+                aviationShips.emplace_back(callSign, ship);
+            }
+            iter.next();
+        }
+
+        if (aviationShips.size() < 2) {
+            std::cout << "Недостаточно кораблей, способных нести авиацию\n";
+            return;
+        }
+
+        // Выбор исходного корабля
+        std::cout << "\nВыберите корабль-источник:\n";
+        for (size_t i = 0; i < aviationShips.size(); ++i) {
+            std::cout << i + 1 << ". " << aviationShips[i].first << "\n";
+        }
+
+        int fromChoice = getNumber(1, static_cast<int>(aviationShips.size()));
+        auto* fromShip = aviationShips[fromChoice-1].second;
+
+        // Получаем список самолётов
+        ship::airvector aircraft;
+        if (auto* carrier = dynamic_cast<IAircraftCarrier*>(fromShip)) {
+            aircraft = carrier->getAircrafts();
+        } else if (auto* aviator = dynamic_cast<IAviatorCruiser*>(fromShip)) {
+            aircraft = aviator->getAircrafts();
+        }
+
+        if (aircraft.empty()) {
+            std::cout << "На выбранном корабле нет самолётов\n";
+            return;
+        }
+
+        // Выбор самолёта
+        std::cout << "\nВыберите самолёт для перевода:\n";
+        for (size_t i = 0; i < aircraft.size(); ++i) {
+            std::cout << i + 1 << ". " << (aircraft[i].first.getType() == Aircraft::AircraftType::FIGHTER ?
+                                           "Истребитель" : "Бомбардировщик") << "\n";
+        }
+
+        int aircraftChoice = getNumber(1, static_cast<int>(aircraft.size()));
+
+        // Выбор целевого корабля
+        std::cout << "\nВыберите корабль назначения:\n";
+        for (size_t i = 0; i < aviationShips.size(); ++i) {
+            if (i != fromChoice - 1) {
+                std::cout << i + 1 << ". " << aviationShips[i].first << "\n";
+            }
+        }
+
+        int toChoice = getNumber(1, static_cast<int>(aviationShips.size()));
+        while (toChoice == fromChoice) {
+            std::cout << "Выберите другой корабль: ";
+            toChoice = getNumber(1, static_cast<int>(aviationShips.size()));
+        }
+
+        // Выполняем перевод
+        MissionError result = mission->transferPlane(&aircraft[aircraftChoice-1].first,
+                                                     aviationShips[fromChoice-1].first,
+                                                     aviationShips[toChoice-1].first);
+
+        if (result == MissionError::SUCCESS) {
+            std::cout << "Самолёт успешно переведён\n";
+        } else {
+            std::cout << "Ошибка при переводе самолёта\n";
         }
     }
 
@@ -320,21 +405,18 @@ namespace acg {
         std::cout << "\n1. Истребитель (500)\n2. Бомбардировщик (700)\nВыбор: ";
         int choice = getNumber<int>(1, 2);
 
-        Aircraft* aircraft;
+        Aircraft aircraft;
         if (choice == 1) {
-            aircraft = new Aircraft(Aircraft::AircraftType::FIGHTER,
+            aircraft = Aircraft(Aircraft::AircraftType::FIGHTER,
                                     100, true, 100, 50.0, 10.0,
                                     1000.0, 20.0, 500.0, 1000.0);
         } else {
-            aircraft = new Aircraft(Aircraft::AircraftType::ATTACK,
+            aircraft = Aircraft(Aircraft::AircraftType::ATTACK,
                                     150, true, 80, 40.0, 15.0,
                                     1200.0, 25.0, 700.0, 1500.0);
         }
 
-        MissionError result = mission->buyPlaneForShip(callSign, aircraft);
-        if (result != MissionError::SUCCESS) {
-            delete aircraft;
-        }
+        MissionError result = mission->buyPlaneForShip(callSign, &aircraft);
 
         return result;
     }

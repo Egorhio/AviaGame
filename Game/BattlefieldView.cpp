@@ -74,32 +74,13 @@ namespace acg {
     }
 
     void BattlefieldView::updateShipPositions(Mission& mission) {
-        if (field.empty()) {
-            std::cout << "Ошибка: поле не инициализировано\n";
-            return;
-        }
-
+        // Clear the field before updating
+        initField();
 
         auto baseA = mission.getBaseACoordinates();
         auto baseB = mission.getBaseBCoordinates();
 
-        double distance = std::sqrt(
-                std::pow(baseB.first - baseA.first, 2) +
-                std::pow(baseB.second - baseA.second, 2)
-        );
-
-        if (distance < 5) {
-            std::cout << "Ошибка: базы должны находиться на расстоянии не менее 5 клеток друг от друга\n";
-            std::cout << "Замена координат баз автоматически...\n";
-        }
-
-        if (baseA == baseB) {
-            generateBasePositions(mission);
-            baseA = mission.getBaseACoordinates();
-            baseB = mission.getBaseBCoordinates();
-        }
-
-        // Проверяем и отмечаем базу A
+        // Mark base A
         int xA = static_cast<int>(baseA.first) % FIELD_SIZE;
         int yA = static_cast<int>(baseA.second) % FIELD_SIZE;
         int sizeA = static_cast<int>(mission.getSizeBaseA());
@@ -113,7 +94,7 @@ namespace acg {
             }
         }
 
-        // Проверяем и отмечаем базу B
+        // Mark base B
         int xB = static_cast<int>(baseB.first) % FIELD_SIZE;
         int yB = static_cast<int>(baseB.second) % FIELD_SIZE;
         int sizeB = static_cast<int>(mission.getSizeBaseB());
@@ -126,6 +107,8 @@ namespace acg {
                 }
             }
         }
+
+        // Update ship positions
         const auto& ships = mission.getShipGroupTable();
         auto iter = ships.getIterator();
 
@@ -135,31 +118,38 @@ namespace acg {
             int x = static_cast<int>(pos.first) % FIELD_SIZE;
             int y = static_cast<int>(pos.second) % FIELD_SIZE;
 
-            // Маркировка кораблей разными символами в зависимости от типа
-            char symbol;
-            switch(ship->getShipType()) {
-                case Ship::shiptype::AIRCRAFTCARRIER:
-                    symbol = 'A';
-                    break;
-                case Ship::shiptype::CRUISER:
-                    symbol = 'C';
-                    break;
-                case Ship::shiptype::AVIATORCRUISER:
-                    symbol = 'V';
-                    break;
-                default:
-                    symbol = 'S';
-            }
-
-            // Проверка границ поля
+            // Check field boundaries
             if (x >= 0 && x < FIELD_SIZE && y >= 0 && y < FIELD_SIZE) {
+                // Use different symbols for different ship types
+                char symbol;
+                switch(ship->getShipType()) {
+                    case Ship::shiptype::AIRCRAFTCARRIER: symbol = 'A'; break;
+                    case Ship::shiptype::CRUISER: symbol = 'C'; break;
+                    case Ship::shiptype::AVIATORCRUISER: symbol = 'V'; break;
+                    default: symbol = 'S';
+                }
+
+                // Check if position is already occupied
                 if (field[y][x] != '.') {
-                    std::cout << "Ошибка: координаты " << x << " " << y << " уже заняты\n";
-                    return;
+                    // Generate new coordinates if position is occupied
+                    bool found = false;
+                    for(int i = -1; i <= 1 && !found; i++) {
+                        for(int j = -1; j <= 1 && !found; j++) {
+                            int newX = x + i;
+                            int newY = y + j;
+                            if (newX >= 0 && newX < FIELD_SIZE &&
+                                newY >= 0 && newY < FIELD_SIZE &&
+                                field[newY][newX] == '.') {
+                                x = newX;
+                                y = newY;
+                                found = true;
+                            }
+                        }
+                    }
+                    if (!found) continue; // Skip if no free position found
                 }
                 field[y][x] = symbol;
             }
-
             iter.next();
         }
     }

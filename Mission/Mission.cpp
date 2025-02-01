@@ -200,6 +200,7 @@ namespace acg {
         if (!cruiser && !aviator) return MissionError::INVALID_SHIP_TYPE;
         ship::armvector current_armament;
         getArmamentList(cruiser, aviator, current_armament);
+        weapon->setActive(true);
         current_armament.push_back(*weapon);
         try {
             if (cruiser) {

@@ -2,6 +2,18 @@
 
 namespace acg {
 
+    void displayAnimatedTextGame(const std::string& text) {
+        static bool first_time = true;
+        std::cout << "\033[1;36m";
+        for(char c : text) {
+            std::cout << c << std::flush;
+            if (first_time)
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+        std::cout << "\033[0m\n";
+        first_time = false;
+    }
+
     void animateExitText() {
         std::string text = "Выход из игры...";
         for (size_t i = 0; i <= text.length(); ++i) {
@@ -96,7 +108,7 @@ namespace acg {
 #pragma clang diagnostic ignored "-Wreturn-type"
     bool MissionView::showNewGameMenu(Mission* mission) {
         std::string commander_name, captain_rank;
-        int choice, max_ships = 0, budget = 0;
+        int choice, max_ships, budget;
 
         do {
             std::cout << "\n=== Новая игра ===\n";

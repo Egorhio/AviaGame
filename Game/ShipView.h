@@ -12,6 +12,7 @@ namespace acg {
     MissionError showBuyShipMenu(Mission* mission);
     MissionError showBuyWeaponMenu(Mission* mission);
     MissionError showBuyAircraftMenu(Mission* mission);
+    void showTransferMenu(Mission* mission);
     void showAllShipsInfo(Mission* mission);
     MissionError showTransferMenu(const ShipTable<Ship>& ships);
 
