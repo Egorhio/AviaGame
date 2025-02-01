@@ -25,14 +25,12 @@ namespace acg {
     class AircraftCarrier : public Ship, public IAircraftCarrier {
     private:
         ship::airvector aircrafts{0};        ///< Вектор самолетов на борту
-        int max_aircraft_capacity = 0;        ///< Максимальная вместимость самолетов
+        int max_aircraft_capacity = 3;        ///< Максимальная вместимость самолетов
 
     public:
         AircraftCarrier(shiptype type, const std::string& name, const std::string& captain,
                         const std::string& owner, double speed, int durability, double cost)
-                : Ship(type, name, captain, owner, speed, durability, cost) {
-            // Дополнительная инициализация, если необходимо
-        }
+                : Ship(type, name, captain, owner, speed, durability, cost) {}
 
         AircraftCarrier(const AircraftCarrier&) = delete;  ///< Запрет копирования
         AircraftCarrier& operator=(const AircraftCarrier&) = delete;  ///< Запрет присваивания
@@ -50,7 +48,7 @@ namespace acg {
          * @param max_cap Новая максимальная вместимость
          * @throw std::invalid_argument если значение отрицательное
          */
-        void setMaxAircraftCapacity(int max_cap);
+        void setMaxAircraftCapacity(int max_cap) override;
 
         /**
          * @brief Получить информацию о самолетах на борту

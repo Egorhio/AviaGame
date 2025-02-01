@@ -163,7 +163,7 @@ namespace acg {
     }
 
     template<class T>
-    ShipTable<T>::Iterator ShipTable<T>::getIterator() {
+    ShipTable<T>::Iterator ShipTable<T>::getIterator() const {
         return Iterator(buckets, capacity);
     }
 

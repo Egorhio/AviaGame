@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <thread>
 #include "Armament.h"
 
 class ArmamentTest : public ::testing::Test {

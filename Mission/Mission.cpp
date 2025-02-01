@@ -545,4 +545,304 @@ namespace acg {
         baseB_coordinates = coordinates;
     }
 
+    std::string Mission::getCaptainRank() const {
+        return captain_rank;
+    }
+
+    void Mission::setCaptainRank(const std::string& rank) {
+        if (rank.empty()) {
+            throw std::invalid_argument("Captain rank cannot be empty");
+        }
+        captain_rank = rank;
+    }
+
+    bool Mission::saveState(const std::string& filename) const {
+        std::ofstream file(filename);
+        // Проверяем, удалось ли открыть файл
+        if (!file.is_open()) {
+            std::cerr << "Не удалось открыть или создать файл: " << filename << std::endl;
+            return false;
+        }
+
+        json mission_state;
+
+        // Добавляем новые поля из Mission.h
+        mission_state["commander"] = commander;
+        mission_state["max_ships"] = max_ships;
+        mission_state["budget"] = budget;
+        mission_state["spent_sum"] = spent_sum;
+        mission_state["saved_units_cost"] = saved_units_cost;
+        mission_state["damage_per_group"] = damage_per_group;
+        mission_state["necessary_damage"] = necessary_damage;
+        mission_state["total_enemy_cost"] = total_enemy_cost;
+        mission_state["base_sizes"] = {
+                {"baseA", size_baseA},
+                {"baseB", size_baseB}
+        };
+        mission_state["bases"] = {
+                {"baseA", {baseA_coordinates.first, baseA_coordinates.second}},
+                {"baseB", {baseB_coordinates.first, baseB_coordinates.second}}
+        };
+
+        // Сохраняем информацию о кораблях
+        mission_state["ships"] = json::array();
+        auto iter = shipGroupTable.getIterator();
+        while (iter.hasNext()) {
+            auto [callSign, ship] = iter.get();
+            json ship_data;
+            ship_data["call_sign"] = callSign;
+            ship_data["type"] = ship->getShipType();
+            ship_data["name"] = ship->getName();
+            ship_data["captain"] = {
+                    {"rank", ship->getCaptainRank()},
+                    {"name", ship->getCaptainName()}
+            };
+            // Добавляем расширенную информацию о корабле
+            ship_data["stats"] = {
+                    {"speed", ship->getSpeed()},
+                    {"durability", ship->getDurability()},
+                    {"cost", ship->getCost()},
+                    {"total_cost", ship->calculateTotalCost()}
+            };
+
+            // Сохраняем координаты
+            ship_data["coordinates"] = {
+                    {"current", {ship->getCurrentCoordinates().first,
+                                        ship->getCurrentCoordinates().second}},
+                    {"destination", {ship->getDestinationCoordinates().first,
+                                        ship->getDestinationCoordinates().second}}
+            };
+
+            Ship::shiptype ship_type = ship->getShipType();
+
+            auto *carrier = ship_type == Ship::shiptype::AIRCRAFTCARRIER ?
+                            dynamic_cast<IAircraftCarrier *>(ship) : nullptr;
+            auto *aviator = ship_type == Ship::shiptype::AVIATORCRUISER ?
+                            dynamic_cast<IAviatorCruiser *>(ship) : nullptr;
+            auto *cruiser = ship_type == Ship::shiptype::CRUISER ?
+                            dynamic_cast<ICruiser *>(ship) : nullptr;
+            // Сохраняем данные для авианосцев и авианесущих крейсеров
+            if (carrier) {
+                saveAircraftData(ship_data, carrier);
+            }
+            if (aviator) {
+                saveAircraftData(ship_data, aviator);
+                saveArmamentData(ship_data, aviator);
+            }
+            if (cruiser) {
+                saveArmamentData(ship_data, cruiser);
+            }
+
+            mission_state["ships"].push_back(ship_data);
+            iter.next();
+        }
+
+        try {
+            file << mission_state.dump(4);
+            file.flush(); // Принудительная запись буфера
+            file.close();
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Ошибка записи: " << e.what() << std::endl;
+            return false;
+        }
+
+    }
+
+    bool Mission::loadState(const std::string& filename) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Не удалось открыть файл: " << filename << std::endl;
+            return false;
+        }
+
+        try {
+            json mission_state;
+            file >> mission_state;
+
+            // Загружаем основные параметры миссии
+            commander = mission_state["commander"];
+            max_ships = mission_state["max_ships"];
+            budget = mission_state["budget"];
+            spent_sum = mission_state["spent_sum"];
+            saved_units_cost = mission_state["saved_units_cost"];
+            damage_per_group = mission_state["damage_per_group"];
+            necessary_damage = mission_state["necessary_damage"];
+            total_enemy_cost = mission_state["total_enemy_cost"];
+
+            // Загружаем размеры баз
+            size_baseA = mission_state["base_sizes"]["baseA"];
+            size_baseB = mission_state["base_sizes"]["baseB"];
+
+            // Загружаем координаты баз
+            auto baseA = mission_state["bases"]["baseA"];
+            auto baseB = mission_state["bases"]["baseB"];
+            baseA_coordinates = {baseA[0], baseA[1]};
+            baseB_coordinates = {baseB[0], baseB[1]};
+
+            // Очищаем текущую таблицу кораблей
+            shipGroupTable.clear();
+
+            // Загружаем корабли
+            for (const auto& ship_data : mission_state["ships"]) {
+                Ship* ship = nullptr;
+                auto type = static_cast<Ship::shiptype>(ship_data["type"]);
+
+                // Создаем корабль соответствующего типа
+                switch(type) {
+                    case Ship::shiptype::AIRCRAFTCARRIER:
+                        ship = new AircraftCarrier(type, ship_data["name"],
+                                                   ship_data["captain"]["rank"], ship_data["captain"]["name"],
+                                                   ship_data["stats"]["speed"], ship_data["stats"]["durability"],
+                                                   ship_data["stats"]["cost"]);
+                        break;
+                    case Ship::shiptype::CRUISER:
+                        ship = new Cruiser(type, ship_data["name"],
+                                           ship_data["captain"]["rank"], ship_data["captain"]["name"],
+                                           ship_data["stats"]["speed"], ship_data["stats"]["durability"],
+                                           ship_data["stats"]["cost"], 5, 1000);
+                        break;
+                    case Ship::shiptype::AVIATORCRUISER:
+                        ship = new AviatorCruiser(type, ship_data["name"],
+                                                  ship_data["captain"]["rank"], ship_data["captain"]["name"],
+                                                  ship_data["stats"]["speed"], ship_data["stats"]["durability"],
+                                                  ship_data["stats"]["cost"], 5, 1000, 5);
+                        break;
+                }
+
+                if (ship) {
+                    // Устанавливаем координаты
+                    auto current = ship_data["coordinates"]["current"];
+                    auto destination = ship_data["coordinates"]["destination"];
+                    ship->setCurrentCoordinates({current[0], current[1]});
+                    ship->setDestinationCoordinates({destination[0], destination[1]});
+
+                    // Загружаем самолеты и вооружение в зависимости от типа корабля
+                    loadAircraftData(ship_data, ship);
+                    loadArmamentData(ship_data, ship);
+
+                    // Добавляем корабль в таблицу
+                    shipGroupTable.addShip(ship_data["call_sign"], ship);
+                }
+            }
+
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Ошибка загрузки: " << e.what() << std::endl;
+            return false;
+        }
+    }
+
+    void saveAircraftData(json& ship_data, const auto* carrier) {
+        if (!carrier) return;
+
+        ship_data["aircraft"] = json::array();
+        auto aircrafts = carrier->getAircrafts();
+
+        for (const auto& [aircraft, coords] : aircrafts) {
+            json aircraft_data;
+            aircraft_data["type"] = aircraft.getType() == Aircraft::AircraftType::FIGHTER ? "FIGHTER" : "ATTACK";
+            aircraft_data["damage"] = aircraft.getDamage();
+            aircraft_data["active"] = aircraft.getActive();
+            aircraft_data["durability"] = aircraft.getDurability();
+            aircraft_data["speed"] = aircraft.getSpeed();
+            aircraft_data["fuel_consumption"] = aircraft.getFuelConsumption();
+            aircraft_data["fuel_capacity"] = aircraft.getFuelCapacity();
+            aircraft_data["refuel_speed"] = aircraft.getRefuelSpeed();
+            aircraft_data["cost"] = aircraft.getCost();
+            aircraft_data["attack_radius"] = aircraft.getAttackRadius();
+            aircraft_data["coordinates"] = {
+                    {"x", coords.first},
+                    {"y", coords.second}
+            };
+
+            ship_data["aircraft"].push_back(aircraft_data);
+        }
+    }
+
+    void saveArmamentData(json& ship_data, auto* aviator) {
+        if (!aviator) return;
+
+        ship_data["armament"] = json::array();
+        auto weapons = aviator->getArmament();
+
+        for (const auto& weapon : weapons) {
+            json weapon_data;
+            weapon_data["name"] = weapon.getName();
+            weapon_data["type"] = static_cast<int>(weapon.getType());
+            weapon_data["ammo_name"] = weapon.getAmmoName();
+            weapon_data["active"] = weapon.getActive();
+            weapon_data["damage"] = weapon.getDamage();
+            weapon_data["range_of_fire"] = weapon.getRangeOfFire();
+            weapon_data["rate_of_fire"] = weapon.getRateOfFire();
+            weapon_data["max_ammo_capacity"] = weapon.getMaxAmmoCapacity();
+            weapon_data["current_ammo"] = weapon.getCurrentAmmo();
+            weapon_data["reload_speed"] = weapon.getReloadSpeed();
+            weapon_data["cost"] = weapon.getCost();
+
+            ship_data["armament"].push_back(weapon_data);
+        }
+    }
+
+    void loadAircraftData(const json& ship_data, Ship* ship) {
+        if (!ship_data.contains("aircraft")) return;
+
+        auto* carrier = dynamic_cast<IAircraftCarrier*>(ship);
+        auto* aviator = dynamic_cast<IAviatorCruiser*>(ship);
+        if (!carrier && !aviator) return;
+
+        ship::airvector aircrafts;
+        for (const auto& aircraft_data : ship_data["aircraft"]) {
+            Aircraft aircraft(
+                    aircraft_data["type"] == "FIGHTER" ?
+                    Aircraft::AircraftType::FIGHTER : Aircraft::AircraftType::ATTACK,
+                    aircraft_data["damage"],
+                    aircraft_data["active"],
+                    aircraft_data["durability"],
+                    aircraft_data["speed"],
+                    aircraft_data["fuel_consumption"],
+                    aircraft_data["fuel_capacity"],
+                    aircraft_data["refuel_speed"],
+                    aircraft_data["cost"],
+                    aircraft_data["attack_radius"]
+            );
+            aircrafts.push_back({aircraft,
+                                 {aircraft_data["coordinates"]["x"], aircraft_data["coordinates"]["y"]}});
+        }
+
+        if (carrier) carrier->modifyAircrafts(aircrafts);
+        else if (aviator) aviator->modifyAircrafts(aircrafts);
+    }
+
+    void loadArmamentData(const json& ship_data, Ship* ship) {
+        if (!ship_data.contains("armament")) return;
+
+        auto* cruiser = dynamic_cast<ICruiser*>(ship);
+        auto* aviator = dynamic_cast<IAviatorCruiser*>(ship);
+        if (!cruiser && !aviator) return;
+
+        ship::armvector armament;
+        for (const auto& weapon_data : ship_data["armament"]) {
+            Armament weapon(
+                    weapon_data["name"],
+                    static_cast<Armament::ArmamentType>(weapon_data["type"]),
+                    weapon_data["damage"],
+                    weapon_data["range_of_fire"],
+                    weapon_data["rate_of_fire"],
+                    weapon_data["max_ammo_capacity"],
+                    weapon_data["reload_speed"],
+                    weapon_data["cost"]
+            );
+            weapon.setActive(weapon_data["active"]);
+            weapon.setCurrentAmmo(weapon_data["current_ammo"]);
+            armament.push_back(weapon);
+        }
+
+        if (cruiser) cruiser->modifyArmament(armament);
+        else if (aviator) aviator->modifyArmament(armament);
+    }
+
+
 } // namespace acg

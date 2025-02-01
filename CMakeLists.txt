@@ -3,7 +3,7 @@ project(3)
 
 set(CMAKE_CXX_STANDARD 23)
 
-include_directories(Armament Aircraft Mission Ship Table-template)
+include_directories(Armament Aircraft Mission Ship Table-template Game ../1)
 
 set(SOURCES
         Armament/Armament.cpp
@@ -28,17 +28,33 @@ set(SOURCES
         Ship/AviatorCruiser/AviatorCruiser-Interface.h
 )
 
-add_executable(3 ${SOURCES} main.cpp
-        )
+set(ADDING
+        Game/BattlefieldView.cpp
+        Game/BattlefieldView.h
+        Game/CombatView.cpp
+        Game/CombatView.h
+        Game/MissionView.cpp
+        Game/MissionView.h
+        Game/ShipView.cpp
+        Game/ShipView.h
+        AI/ai.cpp
+        AI/ai.h
+)
 
-add_executable(project
-        ${SOURCES}
+set(ADDITIONAL
+        ../1/additional.h
+        ../1/additional.cpp
+)
+
+add_executable(main-game ${SOURCES} ${ADDING} ${ADDITIONAL}
         main.cpp
-        ../../SFML-2.6.2/include/SFML/Graphics.hpp
-        ../../SFML-2.6.2/include/SFML/Window.hpp
-        ../../SFML-2.6.2
-        ../../SFML-2.6.2/include/SFML)
+        Game/main-game.h
+)
 
+add_executable(Game ${SOURCES} ${ADDING} ${ADDITIONAL}
+        Game/main-game.cpp
+        Game/main-game.h
+)
 
 # Для работы с FetchContent
 include(FetchContent)
@@ -118,6 +134,17 @@ add_executable(MeasuringTimeRaid
         ${SOURCES}
         Mission/MeasuringSpeedWorkMethod.cpp
 )
+
+# Добавление nlohmann/json
+FetchContent_Declare(
+        json
+        URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz
+)
+FetchContent_MakeAvailable(json)
+
+# Добавьте в target_link_libraries для ваших исполняемых файлов
+target_link_libraries(main-game PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(Game PRIVATE nlohmann_json::nlohmann_json)
 
 
 

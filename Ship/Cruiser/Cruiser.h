@@ -53,7 +53,7 @@ namespace acg {
          * @brief Получить максимальную вместимость вооружения
          * @return Максимальное количество единиц вооружения
          */
-        [[nodiscard]] int getMaxArmamentCapacity() const;
+        [[nodiscard]] int getMaxArmamentCapacity() const override;
 
         /**
          * @brief Установить максимальную вместимость вооружения
@@ -66,7 +66,7 @@ namespace acg {
          * @brief Получить вместимость склада боеприпасов
          * @return Вместимость склада
          */
-        [[nodiscard]] int getStorageCapacity() const;
+        [[nodiscard]] int getStorageCapacity() const override;
 
         /**
          * @brief Установить вместимость склада

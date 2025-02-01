@@ -42,6 +42,13 @@ namespace acg {
         [[nodiscard]] virtual ship::airvector getAircrafts() const = 0;
 
         [[nodiscard]] virtual int getMaxAircraftCapacity() const = 0;
+
+        /**
+         * @brief Установить максимальную вместимость самолетов
+         * @param max_cap Новая максимальная вместимость
+         * @throw std::invalid_argument если значение отрицательное
+         */
+        virtual void setMaxAircraftCapacity(int max_cap) = 0;
     };
 
 } //namespace acg

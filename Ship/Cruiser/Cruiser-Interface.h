@@ -61,6 +61,18 @@ namespace acg {
          * @throw std::invalid_argument если превышена максимальная вместимость вооружения
          */
         virtual void modifyArmament(const ship::armvector& new_armament) = 0;
+
+        /**
+         * @brief Получить вместимость склада боеприпасов
+         * @return Вместимость склада
+         */
+        [[nodiscard]] virtual int getStorageCapacity() const = 0;
+
+        /**
+         * @brief Получить максимальную вместимость вооружения
+         * @return Максимальное количество единиц вооружения
+         */
+        [[nodiscard]] virtual int getMaxArmamentCapacity() const = 0;
     };
 
 } // namespace acg

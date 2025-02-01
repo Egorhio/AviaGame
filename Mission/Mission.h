@@ -4,7 +4,10 @@
 #include "AircraftCarrier/AircraftCarrier.h"
 #include "AviatorCruiser/AviatorCruiser.h"
 
-#include <iostream>
+#include <fstream>  // для std::basic_ofstream
+#include <nlohmann/json.hpp> // для работы с json
+
+using nlohmann::json;
 
 namespace acg {
 
@@ -33,6 +36,7 @@ namespace acg {
     private:
         ShipTable<Ship> shipGroupTable; ///< Таблица судов группы
         std::string commander = "Unnamed"; ///< Командующий миссией
+        std::string captain_rank = "Without rank";
         int max_ships = 0; ///< Максимальное возможное количество кораблей в группе
         double budget = 0.0; ///< Бюджет на миссию
         double spent_sum = 0.0; ///< Потраченная сумма денег
@@ -46,18 +50,31 @@ namespace acg {
         ship::coordinate baseB_coordinates; ///< Координаты базы Б
 
     public:
+        // Геттер
+        [[nodiscard]] const ShipTable<Ship>& getShipGroupTable() const {
+            return shipGroupTable;
+        }
+
+        // Сеттер
+        void setShipGroupTable(const ShipTable<Ship>& table) {
+            shipGroupTable = table;
+        }
+
+        /**
+         * @brief Получает звание капитана
+         * @return Звание капитана
+         */
+        [[nodiscard]] std::string getCaptainRank() const;
+
+        /**
+         * @brief Устанавливает звание капитана
+         * @param rank Новое звание капитана
+         */
+        void setCaptainRank(const std::string &rank);
+
         [[nodiscard]] size_t getCount() const {
             return shipGroupTable.getShipCount();
         }
-        /**
-         * @brief Конструктор по умолчанию
-         */
-        Mission() = default;
-
-        /**
-         * @brief Деструктор
-         */
-        ~Mission() = default;
 
         /**
          * @brief Конструктор с параметрами
@@ -67,6 +84,7 @@ namespace acg {
          */
         Mission(std::string commander, int maxShips, double budget);
 
+        Mission() = default;
         // Методы доступа: геттеры
 
         /**
@@ -74,6 +92,7 @@ namespace acg {
          * @return Имя командующего
          */
         [[nodiscard]] std::string getCommander() const;
+
 
         /**
          * @brief Получает максимальное количество кораблей
@@ -327,6 +346,21 @@ namespace acg {
 
         MissionError MULTIsimulateAirRaid
         (const std::string& carrier_callsign, const ship::coordinate& target_coordinates);
+
+
+        bool saveState(const std::string& filename) const; // NOLINT(*-use-nodiscard)
+
+        bool loadState(const std::string& filename);
+
     };
+
+    void saveAircraftData(json& ship_data, const auto* carrier);
+
+    void saveArmamentData(json& ship_data, auto* aviator);
+
+    void loadAircraftData(const json &ship_data, Ship *ship);
+
+    void loadArmamentData(const json &ship_data, Ship *ship);
+
 
 } // namespace acg

@@ -224,7 +224,7 @@ namespace acg {
          * @brief Создает итератор для таблицы
          * @return Объект итератора
          */
-        Iterator getIterator();
+        Iterator getIterator() const;
     };
 
 } // namespace acg
