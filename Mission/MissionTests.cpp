@@ -502,3 +502,50 @@ TEST_F(MissionAirRaidTest, SuccessfulRaid) {
     acg::ship::coordinate target = {100.0, 100.0};
     EXPECT_EQ(mission->simulateAirRaid("CARRIER1", target), acg::MissionError::SUCCESS);
 }
+
+// Тест для сравнения производительности однопоточной и многопоточной версий
+TEST_F(MissionTest, ComparePerformance) {
+    mission ("Commander", 100000, 1000000.0);
+    auto* carrier = new AircraftCarrier(
+            Ship::shiptype::AIRCRAFTCARRIER,
+            "TestCarrier", "Captain", "John", 30.0, 100, 500.0
+    );
+    mission.buyShip("CARRIER1", carrier);
+
+    std::vector<size_t> test_sizes = {1000, 5000, 10000, 25000};
+
+    for(auto size : test_sizes) {
+        // Добавляем самолеты разных типов
+        for(int i = 0; i < size; i++) {
+            auto* fighter = new Aircraft(
+                    Aircraft::AircraftType::FIGHTER,
+                    100, true, 100, 50.0, 10.0, 1000.0, 20.0, 500.0, 1000.0
+            );
+            auto* bomber = new Aircraft(
+                    Aircraft::AircraftType::ATTACK,
+                    100, true, 100, 50.0, 10.0, 1000.0, 20.0, 500.0, 1000.0
+            );
+            mission.buyPlaneForShip("CARRIER1", fighter);
+            mission.buyPlaneForShip("CARRIER1", bomber);
+        }
+
+        // Замеряем время однопоточной версии
+        auto start_single = std::chrono::high_resolution_clock::now();
+        mission.simulateAirRaid("CARRIER1", {1000.0, 1000.0});
+        auto end_single = std::chrono::high_resolution_clock::now();
+        auto duration_single = std::chrono::duration_cast<std::chrono::milliseconds>
+                (end_single - start_single).count();
+
+        // Замеряем время многопоточной версии
+        auto start_multi = std::chrono::high_resolution_clock::now();
+        mission.MULTIsimulateAirRaid("CARRIER1", {1000.0, 1000.0});
+        auto end_multi = std::chrono::high_resolution_clock::now();
+        auto duration_multi = std::chrono::duration_cast<std::chrono::milliseconds>
+                (end_multi - start_multi).count();
+
+        std::cout << "Size: " << size << "\n"
+                  << "Single-threaded: " << duration_single << "ms\n"
+                  << "Multi-threaded: " << duration_multi << "ms\n"
+                  << "Speedup: " << static_cast<double>(duration_single)/duration_multi << "x\n\n";
+    }
+}

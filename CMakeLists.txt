@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.23)
 project(3)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=thread")
 
 include_directories(Armament Aircraft Mission Ship Table-template Game ../1)
 
@@ -138,13 +139,16 @@ FetchContent_MakeAvailable(json)
 
 # Добавьте в target_link_libraries для ваших исполняемых файлов
 target_link_libraries(Game PRIVATE nlohmann_json::nlohmann_json)
-#target_link_libraries(Misiiontests gtest gtest_main)
+
 target_link_libraries(Misiiontests
         PRIVATE
         gtest
         gtest_main
-        nlohmann_json::nlohmann_json
-)
+        nlohmann_json::nlohmann_json)
+
+target_link_libraries(MeasuringTimeRaid PRIVATE nlohmann_json::nlohmann_json)
+
+
 
 
 

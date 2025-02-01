@@ -333,8 +333,7 @@ namespace acg {
 
         return MissionError::SUCCESS;
     }
-
-
+int x = 0;
     MissionError Mission::MULTIsimulateAirRaid(const std::string& carrier_callsign,
                                                const ship::coordinate& target_coordinates) {
         if (carrier_callsign.empty()) return MissionError::EMPTY_CALLSIGN;
@@ -384,11 +383,15 @@ namespace acg {
                 ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
                 defense_threads.emplace_back([&, ship]() {
                     std::lock_guard<std::mutex> lock_guard(aircraft_mutex);
-                    if (auto* defender = dynamic_cast<ICruiser*>(ship)) {
-                        defender->fireAtAircraft(attacking_aircraft);
+                    if (ship->getShipType() == Ship::shiptype::CRUISER) {
+                        auto *defender = dynamic_cast<ICruiser *>(ship);
+                        if (defender)
+                            defender->fireAtAircraft(attacking_aircraft);
                     }
-                    if (auto* defender = dynamic_cast<IAviatorCruiser*>(ship)) {
-                        defender->fireAtAircraft(attacking_aircraft);
+                    if (ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
+                        auto *defender = dynamic_cast<IAviatorCruiser *>(ship);
+                        if (defender)
+                            defender->fireAtAircraft(attacking_aircraft);
                     }
                 });
             }
