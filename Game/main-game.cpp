@@ -9,14 +9,12 @@ int main() {
     mission->setMaxShips(20);
     mission->setBudget(100000);
 
-    //MissionView::showMainMenu(mission);
-    showShipMenu(mission);
-//    BattlefieldView view(20);
-//    view.initField();
-//    view.updateShipPositions(*mission);
-//    view.displayFieldWithCoordinates();
+    auto * game = new GameController(mission);
+
+    game->gameProcess();
 
 
     delete mission;
+    delete game;
     return 0;
 }

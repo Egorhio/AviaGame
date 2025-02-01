@@ -25,12 +25,11 @@ namespace acg {
             std::cout << "2. Продать/Купить оружие для судна\n";
             std::cout << "3. Продать/Купить самолёты для судна\n";
             std::cout << "4. Имеющийся ассортимент всего сейчас\n";
-            std::cout << "0. Выход\n";
+            std::cout << "0. Начать игру\n";
             std::cout << "Бюджет: " << mission->getRemainingBudget() << "\n";
             std::cout << "Выберите действие: ";
 
-            int choice;
-            std::cin >> choice;
+            int choice = getNumber(0, 4);
             MissionError result = MissionError::INVALID_SHIP_TYPE;
 
             switch (choice) {
@@ -202,6 +201,28 @@ namespace acg {
             std::cout << "\nВыберите корабль (1-5): ";
             std::cin >> choice;
         } while (choice < 1 || choice > 5);
+
+        // Генерация случайных координат (кроме 0,0 и 19,19)
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> coord_dist(1, 18); // От 1 до 18, исключая 0 и 19
+
+        // Генерируем координаты, пока не получим уникальные
+        bool valid_coords = false;
+        ship::coordinate coords;
+        while (!valid_coords) {
+            coords.first = coord_dist(gen);
+            coords.second = coord_dist(gen);
+
+            // Проверяем, что координаты не совпадают с базами (0,0) и (19,19)
+            if ((coords.first != 0 || coords.second != 0) &&
+                (coords.first != 19 || coords.second != 19)) {
+                valid_coords = true;
+            }
+        }
+
+        // Устанавливаем сгенерированные координаты для корабля
+        ships[choice-1]->setCurrentCoordinates(coords);
 
         // Покупка выбранного корабля
         MissionError result = mission->buyShip(callsigns[choice-1], ships[choice-1]);

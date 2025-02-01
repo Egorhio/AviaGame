@@ -338,4 +338,119 @@ namespace acg {
         std::cout << "Стоимость: " << weapon.getCost() << "\n";
     }
 
+    void BattlefieldView::handleShipMovement(Mission* mission) {
+        auto iter = mission->getShipGroupTable().getIterator();
+        std::vector<std::string> playerShips;
+        std::cout << "\nВаши корабли:\n";
+        int i = 1;
+
+        // Получаем список кораблей игрока
+        while(iter.hasNext()) {
+            auto [callSign, ship] = iter.get();
+            if (callSign.find("AI") == std::string::npos) {
+                std::cout << i << ". " << callSign << " на позиции ("
+                          << ship->getCurrentCoordinates().first << ","
+                          << ship->getCurrentCoordinates().second << ")\n";
+                playerShips.push_back(callSign);
+                i++;
+            }
+            iter.next();
+        }
+
+        if (playerShips.empty()) {
+            std::cout << "У вас нет кораблей!\n";
+            return;
+        }
+
+        // Выбор корабля
+        std::cout << "Выберите корабль (1-" << playerShips.size() << "): ";
+        int shipChoice = Prog1::getNumber<int>(1, static_cast<int>(playerShips.size()));
+        std::string selectedShip = playerShips[shipChoice-1];
+
+        // Ввод новых координат
+        std::cout << "Введите новые координаты (x y): ";
+        int x = Prog1::getNumber<int>(1, 19);
+        int y = Prog1::getNumber<int>(2, 19);
+
+        Ship* ship = mission->getShipGroupTable().getShip(selectedShip);
+        ship->setDestinationCoordinates({static_cast<double>(x), static_cast<double>(y)});
+        ship->move();
+
+        // Проверяем, достиг ли корабль базы противника
+        auto baseB = mission->getBaseBCoordinates();
+        if (ship->getCurrentCoordinates() == baseB) {
+            mission->markEnemyAsReached(selectedShip);
+        }
+
+        updateShipPositions(*mission);
+    }
+
+    void BattlefieldView::handleAttack(Mission* mission) {
+        std::cout << "\nВыберите цель для атаки:\n";
+
+        // Получаем список вражеских кораблей
+        std::vector<std::pair<std::string, Ship*>> enemyShips;
+        auto iter = mission->getShipGroupTable().getIterator();
+        while(iter.hasNext()) {
+            auto [callSign, ship] = iter.get();
+            if (callSign.find("AI") != std::string::npos) {
+                enemyShips.emplace_back(callSign, ship);
+            }
+            iter.next();
+        }
+
+        // Показываем список целей
+        for(size_t i = 0; i < enemyShips.size(); i++) {
+            auto [callSign, ship] = enemyShips[i];
+            auto pos = ship->getCurrentCoordinates();
+            std::cout << i+1 << ". " << callSign << " на позиции ("
+                      << pos.first << "," << pos.second << ")\n";
+        }
+
+        if(enemyShips.empty()) {
+            std::cout << "Нет доступных целей\n";
+            return;
+        }
+
+        // Выбор цели
+        int choice = Prog1::getNumber<int>(1, static_cast<int>(enemyShips.size()));
+        auto targetShip = enemyShips[choice-1];
+
+        // Выбор атакующего корабля
+        std::cout << "\nВыберите атакующий корабль:\n";
+        std::vector<std::pair<std::string, Ship*>> playerShips;
+        iter = mission->getShipGroupTable().getIterator();
+        while(iter.hasNext()) {
+            auto [callSign, ship] = iter.get();
+            if (callSign.find("AI") == std::string::npos) {
+                playerShips.emplace_back(callSign, ship);
+            }
+            iter.next();
+        }
+
+        for(size_t i = 0; i < playerShips.size(); i++) {
+            auto [callSign, ship] = playerShips[i];
+            std::cout << i+1 << ". " << callSign << "\n";
+        }
+
+        choice = Prog1::getNumber<int>(1, static_cast<int>(playerShips.size()));
+        auto attackingShip = playerShips[choice-1];
+
+        // Выполнение атаки в зависимости от типа корабля
+        switch(attackingShip.second->getShipType()) {
+            case Ship::shiptype::AIRCRAFTCARRIER:
+                mission->simulateAirRaid(attackingShip.first,
+                                         targetShip.second->getCurrentCoordinates());
+                break;
+            case Ship::shiptype::CRUISER:
+            case Ship::shiptype::AVIATORCRUISER:
+                if (auto* cruiser = dynamic_cast<ICruiser*>(attackingShip.second)) {
+                    cruiser->fireAtShip(targetShip.second->getCurrentCoordinates());
+                }
+                break;
+        }
+
+        updateShipPositions(*mission);
+    }
+
 } // acg

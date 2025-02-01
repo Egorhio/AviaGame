@@ -27,7 +27,7 @@ int main() {
             30,
             2);
 
-    auto* aircraft = new acg::Aircraft(
+    auto aircraft = Aircraft(
             acg::Aircraft::AircraftType::FIGHTER, 100, true, 200.0, 50, 1000.0, 100.0, 100, 100, 4
     );
 
@@ -36,21 +36,21 @@ int main() {
     ship::coordinate coordinatesA(1, 1);
     ship::coordinate coordinatesB(7, 9);
     mission.setBaseACoordinates(coordinatesA);
-    mission.setBaseBCoordinates(coordinatesB);
-    mission.setSizeBaseA(5);
-    carrier->setCurrentCoordinates(coordinates); // TODO утечка памяти при покупке самолётов: не освобождается
+    mission.setBaseBCoordinates(coordinatesB); // TODO Неактивированное оружие почему то
+    mission.setSizeBaseA(5);  // TODO Убрать неизвестную ошибка в ShipView при вызове информации обо всех кораблях
+    carrier->setCurrentCoordinates(coordinates); // TODO Отловить как можно больше ошибок
     aviator->setCurrentCoordinates(coordinates2); // TODO продумать логику таким образом, чтобы корабли были от базы недалеко
 
     mission.buyShip("im", carrier);
     carrier->setMaxAircraftCapacity(10);
-    mission.buyPlaneForShip("im", aircraft);
+    mission.buyPlaneForShip("im", &aircraft);
     mission.buyShip("im2", aviator);
     newview.updateShipPositions(mission);
     //newview.displayFieldWithCoordinates();
     //BattlefieldView::displayShipInfo("im", mission, false);
     mission.saveState("file.json");
 
-    delete aircraft;
+    //delete aircraft;
 
     return 0;
 }

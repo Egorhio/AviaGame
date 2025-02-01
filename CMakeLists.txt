@@ -31,8 +31,6 @@ set(SOURCES
 set(ADDING
         Game/BattlefieldView.cpp
         Game/BattlefieldView.h
-        Game/CombatView.cpp
-        Game/CombatView.h
         Game/MissionView.cpp
         Game/MissionView.h
         Game/ShipView.cpp

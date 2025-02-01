@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Mission.h"
+#include "../1/additional.h"
 #include <random>
 
 namespace acg {
@@ -24,6 +25,10 @@ namespace acg {
         static void displayShipsInfo(const ship::coordinate &coords, const Mission &mission, bool fullinfo);
         static void displayShipsInfo(const std::string &callSign, const Mission &mission, bool fullinfo);
         static void displayShipInfo(const Ship* ship, const std::string& callSign, bool fullinfo);
+
+        void handleShipMovement(Mission *mission);
+
+        void handleAttack(Mission *mission);
     };
 
 } // acg
