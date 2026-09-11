@@ -8,7 +8,7 @@ namespace acg {
         for(char c : text) {
             std::cout << c << std::flush;
             if (first_time)
-                std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Задержка для анимации
+                std::this_thread::sleep_for(std::chrono::milliseconds(12)); // Задержка для анимации
         }
         std::cout << "\033[0m\n"; // Сброс форматирования
         first_time = false;
@@ -93,9 +93,9 @@ namespace acg {
                     break;
                 }
                 case 3: {
-                    std::string callSign;
                     std::cout << "Введите позывной корабля: ";
-                    std::cin >> callSign;
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                    std::string callSign = readline(std::cin);
                     Ship* ship = mission->getShipGroupTable().getShip(callSign);
                     if (ship && (ship->getShipType() == Ship::shiptype::AIRCRAFTCARRIER ||
                                  ship->getShipType() == Ship::shiptype::AVIATORCRUISER)) {
@@ -280,12 +280,9 @@ namespace acg {
             BattlefieldView::displayShipInfo(ships[i], callsigns[i], true);
         }
 
-        // Выбор корабля пользователем
-        int choice;
-        do {
-            std::cout << "\nВыберите корабль (1-5): ";
-            std::cin >> choice;
-        } while (choice < 1 || choice > 5);
+        // Выбор корабля пользователем (getNumber сам отсеивает нечисловой ввод)
+        std::cout << "\nВыберите корабль (1-5): ";
+        int choice = getNumber<int>(1, 5);
 
         // Генерация случайных координат (кроме 0,0 и 19,19)
         std::random_device rd;
@@ -312,9 +309,9 @@ namespace acg {
         // Покупка выбранного корабля
         MissionError result = mission->buyShip(callsigns[choice-1], ships[choice-1]);
 
-        // Очистка неиспользованных кораблей
+        // Очистка неиспользованных кораблей; при неудачной покупке — и выбранного тоже
         for (int i = 0; i < 5; i++) {
-            if (i != choice-1) delete ships[i];
+            if (i != choice-1 || result != MissionError::SUCCESS) delete ships[i];
         }
         return result;
     }
@@ -372,13 +369,8 @@ namespace acg {
         }
 
         // Пользователь выбирает оружие
-        int choice;
-        std::cout << "Выберите оружие (1-5): ";
-        std::cin >> choice;
-        choice--;
-        if (choice < 0 || choice >= weapons.size()) {
-            return MissionError::WEAPON_NOT_FOUND;
-        }
+        std::cout << "Выберите оружие (1-" << weapons.size() << "): ";
+        const int choice = getNumber<int>(1, static_cast<int>(weapons.size())) - 1;
 
         // Выбор корабля для установки оружия
         std::cout << "Введите позывной корабля: ";

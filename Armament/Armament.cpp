@@ -140,40 +140,30 @@ namespace acg {
     }
 
     void Armament::shoot() {
+        // Оружие стреляет только активным и при наличии боезапаса; выстрел тратит один снаряд.
         if (!active || current_ammo <= 0) {
             return;
         }
-        static int shoot_count = 0;
-        int max_shoots_per_second = static_cast<int>(rate_of_fire);
-        shoot_count++;
-        if (shoot_count <= max_shoots_per_second) {
-            current_ammo--;
-            shoot_count = 0;
-        }
+        current_ammo--;
     }
 
     void Armament::reload() {
+        // Ступенчатая перезарядка механизма орудия: занимает reload_speed «тиков».
+        // Прогресс хранится в самом объекте (per-instance), поэтому перезарядка
+        // разных орудий и работа в разных потоках не мешают друг другу.
         if (!active || current_ammo == max_ammo_capacity) {
-            return;
-        }
-        static bool is_reloading = false;
-        static int reload_count = 0;
-
-        // Рассчитываем количество секунд, необходимых для полной перезарядки
-        int reload_time = static_cast<int>(reload_speed);
-
-        if (!is_reloading) {
-            is_reloading = true;
-            reload_count = 0;  // Сбрасываем счетчик перезарядки
+            reload_progress = 0;
             return;
         }
 
-        if (reload_count >= reload_time) {
-            current_ammo = max_ammo_capacity;
-            is_reloading = false;
-        } else {
-            reload_count++;
+        const int reload_time = static_cast<int>(reload_speed);
+        if (reload_progress < reload_time) {
+            reload_progress++;
+            return;
         }
+
+        current_ammo = max_ammo_capacity;
+        reload_progress = 0;
     }
 
     bool Armament::operator==(const Armament& other) const {

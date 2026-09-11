@@ -25,8 +25,8 @@ namespace acg {
         }
     }
 
-    void AircraftCarrier::bomberAttack(const ship::coordinate &target_coordinates) {
-        if (aircrafts.empty()) return;
+    double AircraftCarrier::bomberAttack(const ship::coordinate &target_coordinates) {
+        if (aircrafts.empty()) return 0.0;
 
         auto current_pos = current_coordinates;
         double distance = calculateDistance(target_coordinates, current_pos);
@@ -44,15 +44,15 @@ namespace acg {
             }
         }
 
-        if (available_bombers.empty()) return;
+        if (available_bombers.empty()) return 0.0;
 
-        // Выполняем атаку волнами
-        size_t waves = available_bombers.size() / AIRCRAFT_PER_WAVE;
-        for (int i = 0; i < waves * AIRCRAFT_PER_WAVE; i++) {
+        double total_damage = 0.0;
+        // Выполняем атаку волнами (последняя волна может быть неполной)
+        for (size_t i = 0; i < available_bombers.size(); i++) {
             Aircraft* bomber = available_bombers[i];
-            int wave = i / AIRCRAFT_PER_WAVE;
+            int wave = static_cast<int>(i / AIRCRAFT_PER_WAVE);
 
-            bomber->makeAttackRun(distance);
+            bomber->makeAttackRun(distance); // расходует топливо и наносит износ
 
             // Расчет итогового урона
             double wave_penalty = 1.0 - (0.1 * wave);
@@ -63,14 +63,14 @@ namespace acg {
                                                 distance_factor *
                                                 durability_factor);
 
-            // Применение износа и расхода топлива
+            // Дополнительный износ от результативного захода
             if (final_damage > 0) {
+                total_damage += final_damage;
                 int wear = static_cast<int>(final_damage * 0.1 * (1 + distance / bomber->getAttackRadius()));
                 bomber->receiveDamage(wear);
-                bomber->setFuelCapacity(bomber->getFuelCapacity() -
-                                        bomber->getFuelConsumption() * distance * 2);
             }
         }
+        return total_damage;
     }
 
     void AircraftCarrier::interceptorAttack(const ship::airvector& enemy_aircraft) {

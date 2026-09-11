@@ -52,8 +52,8 @@ namespace acg {
         }
     }
 
-    void AviatorCruiser::bomberAttack(const ship::coordinate& target_coordinates) {
-        if (aircrafts.empty()) return;
+    double AviatorCruiser::bomberAttack(const ship::coordinate& target_coordinates) {
+        if (aircrafts.empty()) return 0.0;
 
         auto current_pos = current_coordinates;
         double distance = calculateDistance(target_coordinates, current_pos);
@@ -71,15 +71,15 @@ namespace acg {
             }
         }
 
-        if (available_bombers.empty()) return;
+        if (available_bombers.empty()) return 0.0;
 
-        // Выполняем атаку волнами
-        size_t waves = available_bombers.size() / AIRCRAFT_PER_WAVE;
-        for (int i = 0; i < waves * AIRCRAFT_PER_WAVE; i++) {
+        double total_damage = 0.0;
+        // Выполняем атаку волнами (последняя волна может быть неполной)
+        for (size_t i = 0; i < available_bombers.size(); i++) {
             Aircraft* bomber = available_bombers[i];
-            int wave = i / AIRCRAFT_PER_WAVE;
+            int wave = static_cast<int>(i / AIRCRAFT_PER_WAVE);
 
-            bomber->makeAttackRun(distance);
+            bomber->makeAttackRun(distance); // расходует топливо и наносит износ
 
             // Расчет итогового урона с учетом волны
             double wave_penalty = 1.0 - (0.1 * wave);
@@ -90,14 +90,14 @@ namespace acg {
                                                 distance_factor *
                                                 durability_factor);
 
-            // Применение износа и расхода топлива
+            // Дополнительный износ от результативного захода
             if (final_damage > 0) {
+                total_damage += final_damage;
                 int wear = static_cast<int>(final_damage * 0.1 * (1 + distance / bomber->getAttackRadius()));
                 bomber->receiveDamage(wear);
-                bomber->setFuelCapacity(bomber->getFuelCapacity() -
-                                        bomber->getFuelConsumption() * distance * 2);
             }
         }
+        return total_damage;
     }
 
     void AviatorCruiser::interceptorAttack(const ship::airvector& enemy_aircraft) {
@@ -133,9 +133,7 @@ namespace acg {
 
             // Если нашли подходящий истребитель, выполняем атаку
             if (best_fighter) {
-                best_fighter->makeAttackRun(distance);
-                best_fighter->setFuelCapacity(best_fighter->getFuelCapacity() -
-                                              best_fighter->getFuelConsumption() * distance * 2);
+                best_fighter->makeAttackRun(distance); // расходует топливо и наносит износ
                 best_fighter->receiveDamage(static_cast<int>(10 + distance * 0.1));
             }
         }
@@ -159,6 +157,10 @@ namespace acg {
             return it->second;
         }
         return {};
+    }
+
+    ship::ammomap AviatorCruiser::getAmmoStorage() const {
+        return ammo_storage;
     }
 
     void AviatorCruiser::modifyAmmoInfo(const ship::ammomap &ammo_name) {
@@ -224,35 +226,25 @@ namespace acg {
 
     void AviatorCruiser::reloadWeapon(const Armament &weapon) {
         if (weapon.getType() == Armament::ArmamentType::HEAVY) {
-            return; // Только легкие орудия могут быть перезаряжены
+            return; // Авианесущий крейсер несёт только лёгкое вооружение
         }
 
-        static int reload_timer = 0;
-        static bool is_reloading = false;
+        // Перезарядка снарядами со склада, без статического состояния.
+        auto &target = const_cast<Armament &>(weapon);
 
-        if (!is_reloading) {
-            reload_timer = 0;
-            is_reloading = true;
+        const int needed_ammo = target.getMaxAmmoCapacity() - target.getCurrentAmmo();
+        if (needed_ammo <= 0) {
+            return;
         }
 
-        auto ammo_info = getAmmoInfo(weapon.getAmmoName());
-        reload_timer++;
-
-        // Если прошло достаточно времени для перезарядки
-        if (reload_timer >= weapon.getReloadSpeed()) {
-            int needed_ammo = weapon.getMaxAmmoCapacity() - weapon.getCurrentAmmo();
-            if (needed_ammo <= 0) return;
-
-            int available_ammo = std::min(needed_ammo, ammo_info.quantity);
-            if (available_ammo > 0) {
-                const_cast<Armament&>(weapon).setCurrentAmmo(
-                        weapon.getCurrentAmmo() + available_ammo
-                );
-                ammo_storage[weapon.getAmmoName()].quantity -= available_ammo;
-            }
-            is_reloading = false;
-            reload_timer = 0;
+        auto it = ammo_storage.find(target.getAmmoName());
+        if (it == ammo_storage.end() || it->second.quantity <= 0) {
+            return;
         }
+
+        const int available_ammo = std::min(needed_ammo, it->second.quantity);
+        target.setCurrentAmmo(target.getCurrentAmmo() + available_ammo);
+        it->second.quantity -= available_ammo;
     }
 
     void AviatorCruiser::fireAtAircraft(const ship::airvector &enemy_aircraft) {

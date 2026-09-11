@@ -8,7 +8,7 @@ namespace acg {
         for(char c : text) {
             std::cout << c << std::flush;
             if (first_time)
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(12));
         }
         std::cout << "\033[0m\n";
         first_time = false;
@@ -19,7 +19,7 @@ namespace acg {
         for (size_t i = 0; i <= text.length(); ++i) {
             std::cout << "\r" << text.substr(0, i);
             std::cout.flush();
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            std::this_thread::sleep_for(std::chrono::milliseconds(6));
         }
         std::cout << std::endl;
     }
@@ -41,10 +41,10 @@ namespace acg {
         std::cout << "    ██████╔╝╚██████╔╝  ██║ \n\n";
 
         std::cout << "\033[0m"; // Сброс цвета
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
     }
 
-    void MissionView::showMainMenu(Mission* mission) {
+    bool MissionView::showMainMenu(Mission* mission) {
         // Очистка экрана
         std::cout << "\033[2J\033[1;1H";
         static bool first_time = true;
@@ -59,14 +59,9 @@ namespace acg {
                     " ╚══╝╚══╝ ╚══════╝╚══════╝╚═════╝ ╚══════╝╚═╝     ╚═╝╚══════╝\n";
 
             first_time = false;
-            // Уменьшенная задержка
-            for (char c: welcomeArt) {
-                std::cout << c << std::flush;
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
-            std::cout << "\n\n";
+            std::cout << welcomeArt << "\n\n" << std::flush;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             animateText();
         }
 
@@ -87,30 +82,32 @@ namespace acg {
             switch(choice) {
                 case 1:
                     result = showNewGameMenu(mission);
-                    if (result) return;
-                    break;
+                    if (result) return true;   // параметры заданы — начинаем игру
+                    break;                     // иначе снова показываем главное меню
                 case 2:
                     std::cout << "Введите название файла: ";
                     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                     file_name = readline(std::cin);
-                    mission->loadState(file_name);
-                    return;
+                    if (mission->loadState(file_name)) {
+                        return true;           // игра загружена
+                    }
+                    std::cout << "Не удалось загрузить игру, попробуйте снова\n";
+                    break;
                 case 3:
                     animateExitText();
-                    return;
+                    return false;              // выход из игры
                 default:
                     std::cout << "Неверный выбор\n";
             }
         } while (true);
     }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wreturn-type"
     bool MissionView::showNewGameMenu(Mission* mission) {
         std::string commander_name, captain_rank;
         int choice, max_ships, budget;
 
-        do {
+        // Единственные выходы из меню — return в case 0 (начать) и case 1 (назад).
+        while (true) {
             std::cout << "\n=== Новая игра ===\n";
             std::cout << "1. Вернуться в главное меню\n";
             std::cout << "2. Указать информацию о командире\n";
@@ -169,9 +166,8 @@ namespace acg {
                 default:
                     std::cout << "Неверный выбор\n";
             }
-        } while (choice != 0 || commander_name.empty() || captain_rank.empty());
+        }
     }
-#pragma clang diagnostic pop
 
     void MissionView::showAdditionalSettings(Mission* mission) {
         int choice;

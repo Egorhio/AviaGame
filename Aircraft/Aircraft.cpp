@@ -143,30 +143,32 @@ namespace acg {
     void Aircraft::makeAttackRun(double distance) {
         if (!active || distance > attack_radius) return;
 
-        // Учитываем состояние самолёта при нанесении урона
         double condition_factor = durability / 100.0;
-        damage = static_cast<int>(damage * condition_factor);
 
-        // Расход топлива при атаке (с учетом расстояния туда и обратно)
+        // Расход топлива при атаке (с учетом расстояния туда и обратно и состояния)
         double fuel_spent = distance * 2 * fuel_consumption * (1.0 + (1.0 - condition_factor) * 0.3);
 
-        // Проверяем достаточность топлива до выполнения операции
+        // Не хватает топлива на возврат — боевой заход невозможен
         if (fuel_capacity < fuel_spent) {
             active = false;
             return;
         }
 
-        // Уменьшаем топливо
+        // Уменьшаем топливо (единственное место, где оно тратится за вылет)
         fuel_capacity -= fuel_spent;
 
         // Износ от выполнения боевой задачи
         durability -= static_cast<int>(distance * 0.1);
+        if (durability <= 0) {
+            durability = 0;
+            active = false;
+        }
 
         // Небольшое снижение стоимости от износа
         cost *= (1.0 - 0.01);
 
         // Проверка на критическое состояние
-        if (durability <= 20) {
+        if (durability > 0 && durability <= 20) {
             speed *= 0.8;
         }
     }

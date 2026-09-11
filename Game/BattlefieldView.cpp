@@ -360,17 +360,11 @@ namespace acg {
         // Ввод новых координат
         std::cout << "Введите новые координаты (x y): ";
         int x = Prog1::getNumber<int>(1, 19);
-        int y = Prog1::getNumber<int>(2, 19);
+        int y = Prog1::getNumber<int>(1, 19);
 
         Ship* ship = mission->getShipGroupTable().getShip(selectedShip);
         ship->setDestinationCoordinates({static_cast<double>(x), static_cast<double>(y)});
         ship->move();
-
-        // Проверяем, достиг ли корабль базы противника
-        auto baseB = mission->getBaseBCoordinates();
-        if (ship->getCurrentCoordinates() == baseB) {
-            mission->markEnemyAsReached(selectedShip);
-        }
 
         updateShipPositions(*mission);
     }
@@ -427,16 +421,20 @@ namespace acg {
         auto attackingShip = playerShips[choice-1];
 
         // Выполнение атаки в зависимости от типа корабля
+        const auto targetPos = targetShip.second->getCurrentCoordinates();
         switch(attackingShip.second->getShipType()) {
             case Ship::shiptype::AIRCRAFTCARRIER:
-                mission->simulateAirRaid(attackingShip.first,
-                                         targetShip.second->getCurrentCoordinates());
+                mission->simulateAirRaid(attackingShip.first, targetPos);
+                break;
+            case Ship::shiptype::AVIATORCRUISER:
+                // Авианесущий крейсер применяет и авиацию, и бортовое вооружение
+                mission->simulateAirRaid(attackingShip.first, targetPos);
+                if (auto* cruiser = dynamic_cast<ICruiser*>(attackingShip.second))
+                    cruiser->fireAtShip(targetPos);
                 break;
             case Ship::shiptype::CRUISER:
-            case Ship::shiptype::AVIATORCRUISER:
-                if (auto* cruiser = dynamic_cast<ICruiser*>(attackingShip.second)) {
-                    cruiser->fireAtShip(targetShip.second->getCurrentCoordinates());
-                }
+                if (auto* cruiser = dynamic_cast<ICruiser*>(attackingShip.second))
+                    cruiser->fireAtShip(targetPos);
                 break;
         }
 

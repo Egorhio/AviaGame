@@ -96,11 +96,17 @@ namespace acg {
         [[nodiscard]] ship::AmmoInfo getAmmoInfo(const std::string &ammo_name) const;
 
         /**
+         * @brief Получить весь склад боеприпасов.
+         * @return Карта боеприпасов (название -> информация).
+         */
+        [[nodiscard]] ship::ammomap getAmmoStorage() const override;
+
+        /**
          * @brief Модифицировать информацию о боеприпасах.
          * @param ammo_name Карта боеприпасов.
          * @throws std::invalid_argument если общее количество боеприпасов превышает вместимость склада.
          */
-        void modifyAmmoInfo(const ship::ammomap& ammo_name);
+        void modifyAmmoInfo(const ship::ammomap& ammo_name) override;
 
         /**
          * @brief Получить максимальную вместимость вооружения.
@@ -186,10 +192,11 @@ namespace acg {
         void modifyAircrafts(const ship::airvector& updated_aircrafts) override;
 
         /**
-         * @brief Выполнить атаку бомбардировщиками.
+         * @brief Выполнить боевой заход бомбардировщиков.
          * @param target_coordinates Координаты цели.
+         * @return Суммарные разрушения, нанесённые бомбардировщиками.
          */
-        void bomberAttack(const ship::coordinate& target_coordinates) override;
+        double bomberAttack(const ship::coordinate& target_coordinates) override;
 
         /**
          * @brief Выполнить атаку истребителями.

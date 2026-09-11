@@ -1,5 +1,8 @@
 #include "main-game.h"
 
+#include <algorithm>
+#include <iostream>
+
 namespace acg {
 
     GameController::GameController(Mission* mission) {
@@ -9,9 +12,11 @@ namespace acg {
 
     void GameController::gameProcess() {
         try {
-            MissionView::showMainMenu(mission);
+            if (!MissionView::showMainMenu(mission)) {
+                return; // Игрок выбрал выход из главного меню
+            }
             showShipMenu(mission);
-            AI::generateRandomAIFleet(mission, "AI");
+            AI::generateRandomAIFleet(mission, AI_TEAM_PREFIX);
 
             view.updateShipPositions(*mission);
             displayAnimatedTextGame("ИГРА НАЧАЛАСЬ");
@@ -20,13 +25,16 @@ namespace acg {
             while (!gameOver) {
                 try {
                     handlePlayerTurn();
+                    mission->removeDestroyedShips();
                     view.updateShipPositions(*mission);
+                    if (!gameOver) gameOver = checkGameOver();
 
                     if (!gameOver) {
                         try {
                             std::cout << "Ход ИИ..." << std::endl;
-                            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                            std::this_thread::sleep_for(std::chrono::milliseconds(300));
                             ai.makeMove(mission);
+                            mission->removeDestroyedShips();
                             view.updateShipPositions(*mission);
                             view.displayFieldWithCoordinates();
                             gameOver = checkGameOver();
@@ -38,6 +46,12 @@ namespace acg {
                 }
                 catch (const std::exception& e) {
                     std::cerr << "Ошибка в ходе игрока: " << e.what() << std::endl;
+                    // Поток ввода закрыт/сломан — продолжать игру нельзя, иначе
+                    // бесконечный цикл на ошибке чтения.
+                    if (!std::cin || std::cin.eof()) {
+                        std::cerr << "Ввод недоступен, выход из игры." << std::endl;
+                        gameOver = true;
+                    }
                 }
             }
         }
@@ -84,34 +98,37 @@ namespace acg {
     }
 
     bool GameController::checkGameOver() {
-        auto baseB = mission->getBaseBCoordinates();
-        auto iter = mission->getShipGroupTable().getIterator();
-
-        while(iter.hasNext()) {
-            auto [callSign, ship] = iter.get();
-            if (callSign.find("AI") == std::string::npos) {
-                auto pos = ship->getCurrentCoordinates();
-                if (pos == baseB) {
-                    return true;
-                }
-            }
-            iter.next();
-        }
+        const auto baseB = mission->getBaseBCoordinates();
+        const double reach = std::max(1.0f, mission->getSizeBaseB());
 
         bool playerHasShips = false;
         bool aiHasShips = false;
-        iter = mission->getShipGroupTable().getIterator();
 
-        while(iter.hasNext()) {
-            auto [callSign, _] = iter.get();
-            if (callSign.find("AI") != std::string::npos) {
+        for (auto iter = mission->getShipGroupTable().getIterator(); iter.hasNext(); iter.next()) {
+            auto [callSign, ship] = iter.get();
+            const bool isAI = callSign.find(AI_TEAM_PREFIX) != std::string::npos;
+            if (isAI) {
                 aiHasShips = true;
             } else {
                 playerHasShips = true;
+                if (calculateDistance(ship->getCurrentCoordinates(), baseB) <= reach) {
+                    std::cout << "Корабль " << callSign << " достиг базы B. Победа!\n";
+                    return true;
+                }
             }
-            iter.next();
         }
 
+        // Победа по нанесённому ущербу противнику (цель первой флотилии)
+        if (mission->getNecessaryDamage() > 0 &&
+            mission->getDamagePerGroup() >= mission->getNecessaryDamage()) {
+            std::cout << "Достигнут необходимый ущерб противнику ("
+                      << mission->getDamagePerGroup() << " / "
+                      << mission->getNecessaryDamage() << "). Победа!\n";
+            return true;
+        }
+
+        if (!playerHasShips) std::cout << "У вас не осталось кораблей. Поражение.\n";
+        else if (!aiHasShips) std::cout << "Флот противника уничтожен. Победа!\n";
         return !playerHasShips || !aiHasShips;
     }
 

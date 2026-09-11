@@ -22,6 +22,10 @@ namespace acg {
         return {};
     }
 
+    ship::ammomap Cruiser::getAmmoStorage() const {
+        return ammo_storage;
+    }
+
     void Cruiser::modifyAmmoInfo(const ship::ammomap &new_ammo) {
         int total_ammo = 0;
         for (const auto& [name, info] : new_ammo) {
@@ -83,37 +87,23 @@ namespace acg {
     }
 
     void Cruiser::reloadWeapon(const Armament &weapon) {
-        static int reload_call_count = 0;
-        static bool is_reloading = false;
-        const int reload_interval_calls = static_cast<int>(weapon.getReloadSpeed());
+        // Перезарядка орудия снарядами со склада корабля.
+        // Без общего/статического состояния — безопасно для нескольких орудий и потоков.
+        auto &target = const_cast<Armament &>(weapon);
 
-        // Проверяем наличие боеприпасов до начала перезарядки
-        auto ammo_info = getAmmoInfo(weapon.getAmmoName());
-        if (ammo_info.quantity <= 0) {
+        const int needed_ammo = target.getMaxAmmoCapacity() - target.getCurrentAmmo();
+        if (needed_ammo <= 0) {
             return;
         }
 
-        if (!is_reloading) {
-            reload_call_count = 0;
-            is_reloading = true;
+        auto it = ammo_storage.find(target.getAmmoName());
+        if (it == ammo_storage.end() || it->second.quantity <= 0) {
+            return;
         }
 
-        reload_call_count++;
-        // Проверяем, прошло ли достаточно "времени" для перезарядки
-        if (reload_call_count >= reload_interval_calls) {
-            int needed_ammo = weapon.getMaxAmmoCapacity() - weapon.getCurrentAmmo();
-            if (needed_ammo <= 0) {
-                return;
-            }
-            int available_ammo = std::min(needed_ammo, ammo_info.quantity);
-            if (available_ammo > 0) {
-                const_cast<Armament&>(weapon).setCurrentAmmo(
-                        weapon.getCurrentAmmo() + available_ammo
-                );
-                ammo_storage[weapon.getAmmoName()].quantity -= available_ammo;
-            }
-            is_reloading = false;
-        }
+        const int available_ammo = std::min(needed_ammo, it->second.quantity);
+        target.setCurrentAmmo(target.getCurrentAmmo() + available_ammo);
+        it->second.quantity -= available_ammo;
     }
 
     void Cruiser::fireAtAircraft(const ship::airvector &enemy_aircraft) {

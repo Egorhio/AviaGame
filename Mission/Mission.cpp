@@ -1,5 +1,10 @@
 #include "Mission.h"
 
+#include <functional>
+#include <iostream>
+#include <limits>
+#include <thread>
+
 namespace acg {
 
     // Проверка бюджета
@@ -145,12 +150,13 @@ namespace acg {
 
         if ((!fromCarrier && !fromAviator) || (!toCarrier && !toAviator))
             return MissionError::INVALID_SHIP_TYPE;
-        // Получаем списки самолётов
+        // Получаем списки самолётов обоих кораблей
         ship::airvector fromAircrafts, toAircrafts;
         getAircraftList(fromCarrier, fromAviator, fromAircrafts);
-        // Проверяем вместимость принимающего корабля
+        getAircraftList(toCarrier, toAviator, toAircrafts);
+        // Проверяем вместимость принимающего корабля (с учётом уже имеющихся самолётов)
         int maxCapacity = toCarrier ? toCarrier->getMaxAircraftCapacity() : toAviator->getMaxAircraftCapacity();
-        if (toAircrafts.size() >= maxCapacity) return MissionError::STORAGE_FULL;
+        if (static_cast<int>(toAircrafts.size()) >= maxCapacity) return MissionError::STORAGE_FULL;
         // Ищем и перемещаем самолёт
         for (auto it = fromAircrafts.begin(); it != fromAircrafts.end(); ++it) {
             if (it->first == *plane) {
@@ -302,38 +308,33 @@ namespace acg {
 
         if (!carrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
 
-        // Получаем список самолетов атакующего корабля
-        ship::airvector attacking_aircraft;
+        // Снимок авиагруппы атакующего корабля (по нему ведут ответный огонь защитники)
+        const ship::airvector attacking_aircraft =
+                carrier ? carrier->getAircrafts() : aviator->getAircrafts();
+
+        // Боевой заход: истребители прикрытия и бомбардировщики
+        double raid_damage;
         if (carrier) {
-            attacking_aircraft = carrier->getAircrafts();
             carrier->interceptorAttack(attacking_aircraft);
-            carrier->bomberAttack(target_coordinates); // Добавляем бомбардировку
+            raid_damage = carrier->bomberAttack(target_coordinates);
         } else {
-            attacking_aircraft = aviator->getAircrafts();
             aviator->interceptorAttack(attacking_aircraft);
-            aviator->bomberAttack(target_coordinates); // Добавляем бомбардировку
+            raid_damage = aviator->bomberAttack(target_coordinates);
         }
 
-        // Ответный огонь от всех кораблей группы
-        auto iter = shipGroupTable.getIterator();
-        while (iter.hasNext()) {
+        // Разрушения от бомбардировки — по ближайшему к точке кораблю противника
+        applyRaidDamage(target_coordinates, raid_damage, carrier_callsign);
+
+        // Ответный огонь от всех кораблей прикрытия по авиагруппе противника
+        for (auto iter = shipGroupTable.getIterator(); iter.hasNext(); iter.next()) {
             auto [_, ship] = iter.get();
-            if (ship->getShipType() == Ship::shiptype::CRUISER) {
-                auto *defender = dynamic_cast<ICruiser *>(ship);
-                if (defender)
-                    defender->fireAtAircraft(attacking_aircraft);
-            }
-            if (ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
-                auto* defender = dynamic_cast<IAviatorCruiser*>(ship);
-                if (defender)
-                    defender->fireAtAircraft(attacking_aircraft);
-            }
-            iter.next();
+            if (auto* defender = dynamic_cast<ICruiser*>(ship))
+                defender->fireAtAircraft(attacking_aircraft);
         }
 
         return MissionError::SUCCESS;
     }
-int x = 0;
+
     MissionError Mission::MULTIsimulateAirRaid(const std::string& carrier_callsign,
                                                const ship::coordinate& target_coordinates) {
         if (carrier_callsign.empty()) return MissionError::EMPTY_CALLSIGN;
@@ -347,65 +348,95 @@ int x = 0;
                         dynamic_cast<IAviatorCruiser*>(carrier_ship) : nullptr;
         if (!carrier && !aviator) return MissionError::INVALID_SHIP_TYPE;
 
-        ship::airvector attacking_aircraft;
-        std::mutex aircraft_mutex; // Мьютекс для защиты вектора самолётов
+        // Снимок авиагруппы атакующего корабля фиксируется ДО налёта — по нему
+        // ведут ответный огонь корабли прикрытия (как и в однопоточной версии).
+        const ship::airvector attacking_aircraft =
+                carrier ? carrier->getAircrafts() : aviator->getAircrafts();
 
-        // Получаем список самолетов
-        if (carrier) {
-            attacking_aircraft = carrier->getAircrafts();
-        } else {
-            attacking_aircraft = aviator->getAircrafts();
-        }
-
-        // Создаем потоки для атаки истребителей и бомбардировщиков
-        std::thread interceptor_thread([&]() {
-            if (carrier) {
-                carrier->interceptorAttack(attacking_aircraft);
-            } else {
-                aviator->interceptorAttack(attacking_aircraft);
+        // Любое исключение в рабочем потоке логируем, а не роняем процесс.
+        auto guarded = [](const char* who, const std::function<void()>& body) {
+            try { body(); }
+            catch (const std::exception& e) {
+                std::cerr << "Поток налёта (" << who << "): " << e.what() << std::endl;
             }
+        };
+
+        // Поток атакующей группы: истребители и бомбардировщики этого корабля.
+        // raid_damage пишется только этим потоком, читается после join — гонки нет.
+        double raid_damage = 0.0;
+        std::thread attacker_thread([&] {
+            guarded("attacker", [&] {
+                if (carrier) {
+                    carrier->interceptorAttack(attacking_aircraft);
+                    raid_damage = carrier->bomberAttack(target_coordinates);
+                } else {
+                    aviator->interceptorAttack(attacking_aircraft);
+                    raid_damage = aviator->bomberAttack(target_coordinates);
+                }
+            });
         });
 
-        std::thread bomber_thread([&]() {
-            if (carrier) {
-                carrier->bomberAttack(target_coordinates);
-            } else {
-                aviator->bomberAttack(target_coordinates);
-            }
-        });
-
-        // Создаем вектор потоков для ответного огня
+        // По потоку на каждый корабль прикрытия. Защитники работают только со своим
+        // вооружением и читают общий снимок — синхронизация не нужна.
         std::vector<std::thread> defense_threads;
-        auto iter = shipGroupTable.getIterator();
-        while (iter.hasNext()) {
-            auto [_, ship] = iter.get();
-            if (ship->getShipType() == Ship::shiptype::CRUISER ||
-                ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
-                defense_threads.emplace_back([&, ship]() {
-                    std::lock_guard<std::mutex> lock_guard(aircraft_mutex);
-                    if (ship->getShipType() == Ship::shiptype::CRUISER) {
-                        auto *defender = dynamic_cast<ICruiser *>(ship);
-                        if (defender)
-                            defender->fireAtAircraft(attacking_aircraft);
-                    }
-                    if (ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
-                        auto *defender = dynamic_cast<IAviatorCruiser *>(ship);
-                        if (defender)
-                            defender->fireAtAircraft(attacking_aircraft);
-                    }
+        for (auto iter = shipGroupTable.getIterator(); iter.hasNext(); iter.next()) {
+            auto [callsign, ship] = iter.get();
+            const auto st = ship->getShipType();
+            if (st != Ship::shiptype::CRUISER && st != Ship::shiptype::AVIATORCRUISER) continue;
+            defense_threads.emplace_back([&, ship] {
+                guarded("defender", [&] {
+                    if (auto* defender = dynamic_cast<ICruiser*>(ship))
+                        defender->fireAtAircraft(attacking_aircraft);
                 });
-            }
-            iter.next();
+            });
         }
 
-        // Ожидаем завершения всех потоков
-        interceptor_thread.join();
-        bomber_thread.join();
-        for (auto& thread : defense_threads) {
-            thread.join();
-        }
+        attacker_thread.join();
+        for (auto& t : defense_threads) t.join();
+
+        // Разрушения от бомбардировки применяем после потоков — таблица меняется вне гонок
+        applyRaidDamage(target_coordinates, raid_damage, carrier_callsign);
 
         return MissionError::SUCCESS;
+    }
+
+    double Mission::applyRaidDamage(const ship::coordinate& point, double damage,
+                                    const std::string& attacker_callsign) {
+        if (damage <= 0.0) return 0.0;
+
+        // Ищем ближайший к точке удара корабль, кроме самого атакующего
+        Ship* target = nullptr;
+        double best = std::numeric_limits<double>::max();
+        for (auto iter = shipGroupTable.getIterator(); iter.hasNext(); iter.next()) {
+            auto [cs, ship] = iter.get();
+            if (cs == attacker_callsign) continue;
+            const double d = calculateDistance(point, ship->getCurrentCoordinates());
+            if (d < best) { best = d; target = ship; }
+        }
+        if (!target) return 0.0;
+
+        const double cost_before = target->calculateTotalCost();
+        target->receiveDamage(static_cast<int>(damage));
+
+        // Уничтоженный корабль не удаляем здесь (может идти обход таблицы у вызвавшего),
+        // только учитываем ущерб «в стоимости уничтоженного». Реальное удаление —
+        // в removeDestroyedShips() между ходами.
+        double destroyed_cost = 0.0;
+        if (target->getDurability() <= 0) {
+            destroyed_cost = cost_before;
+        }
+        damage_per_group += destroyed_cost;
+        return destroyed_cost;
+    }
+
+    int Mission::removeDestroyedShips() {
+        std::vector<std::string> dead;
+        for (auto iter = shipGroupTable.getIterator(); iter.hasNext(); iter.next()) {
+            auto [cs, ship] = iter.get();
+            if (ship->getDurability() <= 0) dead.push_back(cs);
+        }
+        for (const auto& cs : dead) shipGroupTable.removeShip(cs);
+        return static_cast<int>(dead.size());
     }
 
 
@@ -572,6 +603,7 @@ int x = 0;
 
         // Добавляем новые поля из Mission.h
         mission_state["commander"] = commander;
+        mission_state["captain_rank"] = captain_rank;
         mission_state["max_ships"] = max_ships;
         mission_state["budget"] = budget;
         mission_state["spent_sum"] = spent_sum;
@@ -667,6 +699,7 @@ int x = 0;
 
             // Загружаем основные параметры миссии
             commander = mission_state["commander"];
+            captain_rank = mission_state.value("captain_rank", std::string("Without rank"));
             max_ships = mission_state["max_ships"];
             budget = mission_state["budget"];
             spent_sum = mission_state["spent_sum"];
@@ -693,25 +726,33 @@ int x = 0;
                 Ship* ship = nullptr;
                 auto type = static_cast<Ship::shiptype>(ship_data["type"]);
 
+                // Вместимости корабля берём из файла (со значениями по умолчанию для старых сейвов)
+                const int max_arm_cap = ship_data.value("max_armament_capacity", 5);
+                const int storage_cap = ship_data.value("storage_capacity", 1000);
+                const int max_air_cap = ship_data.value("max_aircraft_capacity", 5);
+
                 // Создаем корабль соответствующего типа
                 switch(type) {
-                    case Ship::shiptype::AIRCRAFTCARRIER:
-                        ship = new AircraftCarrier(type, ship_data["name"],
+                    case Ship::shiptype::AIRCRAFTCARRIER: {
+                        auto* carrier = new AircraftCarrier(type, ship_data["name"],
                                                    ship_data["captain"]["rank"], ship_data["captain"]["name"],
                                                    ship_data["stats"]["speed"], ship_data["stats"]["durability"],
                                                    ship_data["stats"]["cost"]);
+                        carrier->setMaxAircraftCapacity(max_air_cap);
+                        ship = carrier;
                         break;
+                    }
                     case Ship::shiptype::CRUISER:
                         ship = new Cruiser(type, ship_data["name"],
                                            ship_data["captain"]["rank"], ship_data["captain"]["name"],
                                            ship_data["stats"]["speed"], ship_data["stats"]["durability"],
-                                           ship_data["stats"]["cost"], 5, 1000);
+                                           ship_data["stats"]["cost"], max_arm_cap, storage_cap);
                         break;
                     case Ship::shiptype::AVIATORCRUISER:
                         ship = new AviatorCruiser(type, ship_data["name"],
                                                   ship_data["captain"]["rank"], ship_data["captain"]["name"],
                                                   ship_data["stats"]["speed"], ship_data["stats"]["durability"],
-                                                  ship_data["stats"]["cost"], 5, 1000, 5);
+                                                  ship_data["stats"]["cost"], max_arm_cap, storage_cap, max_air_cap);
                         break;
                 }
 
@@ -742,6 +783,7 @@ int x = 0;
     void saveAircraftData(json& ship_data, const auto* carrier) {
         if (!carrier) return;
 
+        ship_data["max_aircraft_capacity"] = carrier->getMaxAircraftCapacity();
         ship_data["aircraft"] = json::array();
         auto aircrafts = carrier->getAircrafts();
 
@@ -768,6 +810,19 @@ int x = 0;
 
     void saveArmamentData(json& ship_data, auto* aviator) {
         if (!aviator) return;
+
+        ship_data["storage_capacity"] = aviator->getStorageCapacity();
+        ship_data["max_armament_capacity"] = aviator->getMaxArmamentCapacity();
+
+        // Склад боеприпасов (название -> количество/размер/стоимость единицы)
+        ship_data["ammo_storage"] = json::object();
+        for (const auto& [ammo_name, info] : aviator->getAmmoStorage()) {
+            ship_data["ammo_storage"][ammo_name] = {
+                    {"quantity", info.quantity},
+                    {"size", info.size},
+                    {"cost", info.cost}
+            };
+        }
 
         ship_data["armament"] = json::array();
         auto weapons = aviator->getArmament();
@@ -821,11 +876,24 @@ int x = 0;
     }
 
     void loadArmamentData(const json& ship_data, Ship* ship) {
-        if (!ship_data.contains("armament")) return;
-
         auto* cruiser = dynamic_cast<ICruiser*>(ship);
         auto* aviator = dynamic_cast<IAviatorCruiser*>(ship);
         if (!cruiser && !aviator) return;
+        ICruiser* armed = cruiser ? cruiser : static_cast<ICruiser*>(aviator);
+
+        // Восстанавливаем склад боеприпасов (до вооружения — modifyAmmoInfo сверяется с вместимостью)
+        if (ship_data.contains("ammo_storage")) {
+            ship::ammomap storage;
+            for (const auto& [ammo_name, info] : ship_data["ammo_storage"].items()) {
+                storage[ammo_name] = ship::AmmoInfo(
+                        info.value("quantity", 0),
+                        info.value("size", 0.0),
+                        info.value("cost", 0.0));
+            }
+            armed->modifyAmmoInfo(storage);
+        }
+
+        if (!ship_data.contains("armament")) return;
 
         ship::armvector armament;
         for (const auto& weapon_data : ship_data["armament"]) {

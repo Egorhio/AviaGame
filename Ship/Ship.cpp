@@ -21,8 +21,8 @@ namespace acg {
     }
 
     void Ship::setName(const std::string& n) {
-        if (name.empty()) {
-            throw std::invalid_argument("Captain name cannot be empty");
+        if (n.empty()) {
+            throw std::invalid_argument("Ship name cannot be empty");
         }
         name = n;
     }
@@ -154,7 +154,7 @@ namespace acg {
 
     void Ship::move() {
         auto destination = destination_coordinates;
-        double distance = calculateDistance(destination, destination_coordinates);
+        double distance = calculateDistance(destination, current_coordinates);
         if (distance > speed) {
             double ratio = speed / distance;
             ship::coordinate new_pos = {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BattlefieldView.h"
-#include "../1/additional.h"
+#include "../common/additional.h"
 
 namespace acg {
 

@@ -33,6 +33,7 @@ namespace acg {
         int current_ammo = 0;                 ///< Текущее количество боеприпасов
         double reload_speed = 0.0;            ///< Скорость перезарядки
         double cost = 0.0;                    ///< Стоимость оружия
+        int reload_progress = 0;              ///< Прогресс ступенчатой перезарядки (число «тиков»)
 
     public:
 

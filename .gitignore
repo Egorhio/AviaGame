@@ -1,12 +1,16 @@
-# Игнорирую папку сборки и папку сборки с отслеживанием покрытия
+# Игнорирую папки сборки, зависимости FetchContent и артефакты покрытия
 cmake-build-debug/
 cmake-build-debug-coverage
+cmake-build-*/
+build/
+_deps/
 html
 latex
 #Catch2
 temporary
 .idea/
 .idea
+.vscode/
 # Игнорирование файлов, которые не нужно отслеживать
 # файлы с расширением .a, .lib, .so, .dylib, .dll (опционально)
 *.a

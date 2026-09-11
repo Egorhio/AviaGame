@@ -50,14 +50,10 @@ namespace acg {
         ship::coordinate baseB_coordinates; ///< Координаты базы Б
 
     public:
-        // Геттер
+        // Доступ к таблице судов группы (только по ссылке — таблица владеет кораблями
+        // и не копируется, см. ShipTable).
         [[nodiscard]] const ShipTable<Ship>& getShipGroupTable() const {
             return shipGroupTable;
-        }
-
-        // Сеттер
-        void setShipGroupTable(const ShipTable<Ship>& table) {
-            shipGroupTable = table;
         }
 
         /**
@@ -346,6 +342,29 @@ namespace acg {
 
         MissionError MULTIsimulateAirRaid
         (const std::string& carrier_callsign, const ship::coordinate& target_coordinates);
+
+    private:
+        /**
+         * @brief Применяет разрушения налёта к ближайшему к точке кораблю (кроме атакующего).
+         * @param point Точка удара
+         * @param damage Суммарные разрушения бомбардировщиков
+         * @param attacker_callsign Позывной атакующего корабля (исключается из целей)
+         * @return Стоимость уничтоженных единиц (учитывается в damage_per_group)
+         *
+         * Изменяет таблицу кораблей — вызывать только вне рабочих потоков налёта.
+         */
+        double applyRaidDamage(const ship::coordinate& point, double damage,
+                               const std::string& attacker_callsign);
+
+    public:
+        /**
+         * @brief Удаляет из таблицы корабли с нулевой живучестью.
+         * @return Количество удалённых кораблей.
+         *
+         * Вызывать между ходами, когда таблица не обходится итератором.
+         */
+        int removeDestroyedShips();
+
 
 
         bool saveState(const std::string& filename) const; // NOLINT(*-use-nodiscard)

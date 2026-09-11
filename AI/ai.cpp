@@ -5,50 +5,49 @@ namespace acg {
     void AI::analyzeGameState(Mission* mission) {
         if (!mission) return;
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> coord_dist(1, 18);
+        // Флот ИИ держит курс на базу B (цель — довести корабли до базы назначения)
+        const ship::coordinate baseB = mission->getBaseBCoordinates();
 
-        auto iter = mission->getShipGroupTable().getIterator();
-        while (iter.hasNext()) {
+        for (auto iter = mission->getShipGroupTable().getIterator(); iter.hasNext(); iter.next()) {
             auto [callSign, ship] = iter.get();
             if (callSign.find(aiTeamCallsign) != std::string::npos) {
-                ship::coordinate new_dest = {
-                        static_cast<double>(coord_dist(gen)),
-                        static_cast<double>(coord_dist(gen))
-                };
-                ship->setDestinationCoordinates(new_dest);
+                ship->setDestinationCoordinates(baseB);
             }
-            iter.next();
         }
     }
 
     void AI::planStrategy(Mission* mission) {
         if (!mission) return;
 
-        // Стратегия атаки для авианосцев
-        auto iter = mission->getShipGroupTable().getIterator();
-        while (iter.hasNext()) {
-            auto [callSign, ship] = iter.get();
-            if (callSign.find(aiTeamCallsign) != std::string::npos) {
-                if (ship->getShipType() == Ship::shiptype::AIRCRAFTCARRIER ||
-                    ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
+        // Командующий ИИ за ход планирует один воздушный налёт: выбирает свой
+        // авианесущий корабль и ближайшую к нему цель противника.
+        std::string raider;
+        std::string victim;
+        double best_dist = -1.0;
 
-                    // Поиск целей для атаки
-                    auto enemyIter = mission->getShipGroupTable().getIterator();
-                    while (enemyIter.hasNext()) {
-                        auto [enemyCallSign, enemyShip] = enemyIter.get();
-                        if (enemyCallSign.find(aiTeamCallsign) == std::string::npos) {
-                            auto enemyPos = enemyShip->getCurrentCoordinates();
-                            // Планирование воздушного налета
-                            mission->simulateAirRaid(callSign, enemyPos);
-                            break;
-                        }
-                        enemyIter.next();
-                    }
+        for (auto iter = mission->getShipGroupTable().getIterator(); iter.hasNext(); iter.next()) {
+            auto [callSign, ship] = iter.get();
+            const bool isAI = callSign.find(aiTeamCallsign) != std::string::npos;
+            if (!isAI) continue;
+            if (ship->getShipType() != Ship::shiptype::AIRCRAFTCARRIER &&
+                ship->getShipType() != Ship::shiptype::AVIATORCRUISER) continue;
+
+            for (auto e = mission->getShipGroupTable().getIterator(); e.hasNext(); e.next()) {
+                auto [enemyCallSign, enemyShip] = e.get();
+                if (enemyCallSign.find(aiTeamCallsign) != std::string::npos) continue;
+                double d = calculateDistance(enemyShip->getCurrentCoordinates(),
+                                             ship->getCurrentCoordinates());
+                if (best_dist < 0 || d < best_dist) {
+                    best_dist = d;
+                    raider = callSign;
+                    victim = enemyCallSign;
                 }
             }
-            iter.next();
+        }
+
+        if (best_dist >= 0.0) {
+            Ship* target = mission->getShipGroupTable().getShip(victim);
+            if (target) mission->simulateAirRaid(raider, target->getCurrentCoordinates());
         }
     }
 
@@ -67,18 +66,26 @@ namespace acg {
                     ship->move();
                 }
 
-                // Атака ближайших целей для крейсеров
+                // Атака ближайшей цели противника для крейсеров
                 if (ship->getShipType() == Ship::shiptype::CRUISER ||
                     ship->getShipType() == Ship::shiptype::AVIATORCRUISER) {
-                    auto* cruiser = dynamic_cast<ICruiser*>(ship);
-                    if (cruiser) {
-                        auto enemyIter = mission->getShipGroupTable().getIterator();
-                        while (enemyIter.hasNext()) {
-                            auto [_, enemyShip] = enemyIter.get();
-                            cruiser->fireAtShip(enemyShip->getCurrentCoordinates());
-                            break;
+                    if (auto* cruiser = dynamic_cast<ICruiser*>(ship)) {
+                        ship::coordinate best_target{};
+                        double best_dist = -1.0;
+                        for (auto enemyIter = mission->getShipGroupTable().getIterator();
+                             enemyIter.hasNext(); enemyIter.next()) {
+                            auto [enemyCallSign, enemyShip] = enemyIter.get();
+                            if (enemyCallSign.find(aiTeamCallsign) != std::string::npos) continue; // свой
+                            double d = calculateDistance(enemyShip->getCurrentCoordinates(),
+                                                         ship->getCurrentCoordinates());
+                            if (best_dist < 0 || d < best_dist) {
+                                best_dist = d;
+                                best_target = enemyShip->getCurrentCoordinates();
+                            }
                         }
-                        enemyIter.next();
+                        if (best_dist >= 0.0) {
+                            cruiser->fireAtShip(best_target);
+                        }
                     }
                 }
             }
@@ -94,6 +101,11 @@ namespace acg {
         std::uniform_int_distribution<> ship_count_dist(3, 7);
         int shipCount = ship_count_dist(gen);
 
+        // Флот противника формируется независимо от бюджета и лимита игрока:
+        // расширяем лимиты миссии, чтобы покупки ИИ гарантированно прошли.
+        mission->setMaxShips(mission->getMaxShips() + shipCount);
+        mission->setBudget(mission->getBudget() + shipCount * 6000.0);
+
         // Распределения для характеристик
         std::uniform_real_distribution<> speed_dist(20.0, 40.0);
         std::uniform_int_distribution<> durability_dist(50, 100);
@@ -102,7 +114,7 @@ namespace acg {
 
         for (int i = 0; i < shipCount; i++) {
             // Создаем случайный корабль
-            Ship* ship;
+            Ship* ship = nullptr;
             auto type = static_cast<Ship::shiptype>(type_dist(gen));
             std::string callSign = aiTeamPrefix + std::to_string(i);
             // Генерация случайных координат (исключая 0,0 и 19,19)
@@ -121,16 +133,15 @@ namespace acg {
                 }
             }
 
+            bool needsAircraft = false;
+            bool needsWeapons = false;
             switch(type) {
                 case Ship::shiptype::AIRCRAFTCARRIER: {
                     auto* carrier = new AircraftCarrier(type, "AI_Carrier", "Captain", "AI",
                                                         speed_dist(gen), durability_dist(gen), cost_dist(gen));
                     carrier->setMaxAircraftCapacity(5);
                     ship = carrier;
-                    ship->setCurrentCoordinates(random_coords);
-                    mission->buyShip(callSign, ship);
-                    // Добавляем случайные самолеты
-                    generateRandomAircraft(mission, callSign);
+                    needsAircraft = true;
                     break;
                 }
                 case Ship::shiptype::CRUISER: {
@@ -138,10 +149,7 @@ namespace acg {
                                                 speed_dist(gen), durability_dist(gen), cost_dist(gen), 5, 1000);
                     cruiser->setMaxArmamentCapacity(10);
                     ship = cruiser;
-                    ship->setCurrentCoordinates(random_coords);
-                    mission->buyShip(callSign, ship);
-                    // Добавляем случайное оружие
-                    generateRandomWeapons(mission, callSign);
+                    needsWeapons = true;
                     break;
                 }
                 case Ship::shiptype::AVIATORCRUISER: {
@@ -150,14 +158,22 @@ namespace acg {
                     aviator->setMaxAircraftCapacity(5);
                     aviator->setMaxArmamentCapacity(10);
                     ship = aviator;
-                    ship->setCurrentCoordinates(random_coords);
-                    mission->buyShip(callSign, ship);
-                    // Добавляем и оружие, и самолеты
-                    generateRandomWeapons(mission, callSign);
-                    generateRandomAircraft(mission, callSign);
+                    needsAircraft = true;
+                    needsWeapons = true;
                     break;
                 }
             }
+
+            if (!ship) continue;
+            ship->setCurrentCoordinates(random_coords);
+            if (mission->buyShip(callSign, ship) != MissionError::SUCCESS) {
+                delete ship;                 // покупка не прошла — не допускаем утечки
+                continue;
+            }
+            // Учитываем стоимость корабля противника
+            mission->setTotalEnemyCost(mission->getTotalEnemyCost() + ship->calculateTotalCost());
+            if (needsWeapons)  generateRandomWeapons(mission, callSign);
+            if (needsAircraft) generateRandomAircraft(mission, callSign);
         }
 
         return MissionError::SUCCESS;

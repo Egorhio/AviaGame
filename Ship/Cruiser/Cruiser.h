@@ -43,11 +43,17 @@ namespace acg {
         [[nodiscard]] ship::AmmoInfo getAmmoInfo(const std::string &ammo_name) const;
 
         /**
+         * @brief Получить весь склад боеприпасов
+         * @return Карта боеприпасов (название -> информация)
+         */
+        [[nodiscard]] ship::ammomap getAmmoStorage() const override;
+
+        /**
          * @brief Изменить информацию о боеприпасах
          * @param ammo_name Новая карта боеприпасов
          * @throw std::invalid_argument если превышена вместимость склада
          */
-        void modifyAmmoInfo(const ship::ammomap& ammo_name);
+        void modifyAmmoInfo(const ship::ammomap& ammo_name) override;
 
         /**
          * @brief Получить максимальную вместимость вооружения

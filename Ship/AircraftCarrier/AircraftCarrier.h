@@ -64,10 +64,11 @@ namespace acg {
         void modifyAircrafts(const ship::airvector& updated_aircrafts) override;
 
         /**
-         * @brief Выполнить атаку бомбардировщиками
+         * @brief Выполнить боевой заход бомбардировщиков
          * @param target_coordinates Координаты цели
+         * @return Суммарные разрушения, нанесённые бомбардировщиками
          */
-        void bomberAttack(const ship::coordinate& target_coordinates) override;
+        double bomberAttack(const ship::coordinate& target_coordinates) override;
 
         /**
          * @brief Выполнить атаку истребителями

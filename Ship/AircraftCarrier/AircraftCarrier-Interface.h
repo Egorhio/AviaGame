@@ -26,10 +26,11 @@ namespace acg {
         virtual ~IAircraftCarrier() = default;
 
         /**
-         * @brief Выполнить атаку бомбардировщиками по заданным координатам
+         * @brief Выполнить боевой заход бомбардировщиков по заданным координатам
          * @param target_coordinates Координаты цели для атаки
+         * @return Суммарные разрушения, которые нанесли бомбардировщики
          */
-        virtual void bomberAttack(const ship::coordinate& target_coordinates) = 0;
+        virtual double bomberAttack(const ship::coordinate& target_coordinates) = 0;
 
         /**
          * @brief Выполнить атаку истребителями по вражеской авиации

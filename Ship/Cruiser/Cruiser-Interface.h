@@ -69,6 +69,19 @@ namespace acg {
         [[nodiscard]] virtual int getStorageCapacity() const = 0;
 
         /**
+         * @brief Получить весь склад боеприпасов (название -> информация)
+         * @return Карта боеприпасов, хранящихся на складе
+         */
+        [[nodiscard]] virtual ship::ammomap getAmmoStorage() const = 0;
+
+        /**
+         * @brief Заменить содержимое склада боеприпасов
+         * @param ammo Новая карта боеприпасов
+         * @throw std::invalid_argument если суммарное количество превышает вместимость склада
+         */
+        virtual void modifyAmmoInfo(const ship::ammomap& ammo) = 0;
+
+        /**
          * @brief Получить максимальную вместимость вооружения
          * @return Максимальное количество единиц вооружения
          */

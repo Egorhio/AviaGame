@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mission.h"
-#include "../1/additional.h"
+#include "../common/additional.h"
 #include <random>
 
 namespace acg {

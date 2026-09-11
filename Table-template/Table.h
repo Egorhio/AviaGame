@@ -71,6 +71,10 @@ namespace acg {
          */
         ~ShipTable();
 
+        /// Таблица владеет объектами кораблей (delete в деструкторе), поэтому копирование запрещено
+        ShipTable(const ShipTable&) = delete;
+        ShipTable& operator=(const ShipTable&) = delete;
+
         /**
          * @brief Добавляет корабль в таблицу
          * @param call_sign Позывной корабля
