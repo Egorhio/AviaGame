@@ -1,28 +1,29 @@
-# Игнорирую папки сборки, зависимости FetchContent и артефакты покрытия
-cmake-build-debug/
-cmake-build-debug-coverage
-cmake-build-*/
+# Каталоги сборки и зависимости FetchContent
 build/
+cmake-build-*/
 _deps/
-html
-latex
-#Catch2
-temporary
+out/
+
+# Документация Doxygen
+html/
+latex/
+Doxyfile
+
+# IDE
 .idea/
-.idea
 .vscode/
-# Игнорирование файлов, которые не нужно отслеживать
-# файлы с расширением .a, .lib, .so, .dylib, .dll (опционально)
+*.user
+
+# Артефакты компиляции
+*.o
+*.obj
 *.a
 *.lib
 *.so
 *.dylib
 *.dll
-# все другие временные и сгенерированные файлы (опционально)
-*.o
 *.exe
 *.out
-*.user
-*.png
-*.xml
-Doxyfile
+
+# Личная шпаргалка, не часть проекта
+/Приведение типов.png
